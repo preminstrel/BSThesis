@@ -1,0 +1,4 @@
+utils/__pycache__/
+networks/__pycache__/
+.DS_Store
+.vscode/
