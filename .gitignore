@@ -1,4 +1,8 @@
 utils/__pycache__/
-networks/__pycache__/
 .DS_Store
 .vscode/
+.ipynb_checkpoints/
+archive/
+models/__pycache__/
+engine/__pycache__/
+data/__pycache__/

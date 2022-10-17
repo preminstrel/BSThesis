@@ -5,9 +5,7 @@ import os
 
 class ParserArgs(object):
     def __init__(self):
-        self.parser = argparse.ArgumentParser(
-            description="PyTorch Training and Testing"
-        )
+        self.parser = argparse.ArgumentParser()
 
         self.get_general_parser()
 
@@ -17,58 +15,22 @@ class ParserArgs(object):
         # self.get_comparison_exps_args()
 
     def get_general_parser(self):
-        self.parser.add_argument(
-            "--resume",
-            default="",
-            type=str,
-            metavar="PATH",
-            help="path to latest checkpoint (format: version/path.tar)",
-        )
-        self.parser.add_argument(
-            "--save_freq",
-            default=10,
-            type=int,
-            help="ckpt save frequency (default: 10)",
-        )
-        self.parser.add_argument(
-            "--n_epochs",
-            default=200,
-            type=int,
-            help="number of total epochs to run (default: 200)",
-        )
-        self.parser.add_argument(
-            "--start_epoch",
-            default=0,
-            type=int,
-            help="start epoch number for resume use",
-        )
+        # training settings
+        self.parser.add_argument("--epochs", type=int, default=200, help="number of epochs of training")
+        self.parser.add_argument("--batch_size", type=int, default=16, help="batch size")
+        self.parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
+        self.parser.add_argument("--resume", type=str, default="", metavar="PATH", help="path to checkpoints")
+        self.parser.add_argument("--save_freq", type=int, default=10, help="save frequency")
+        self.parser.add_argument("--valid_freq", type=int, default=10, help="validation frequency")
+        self.parser.add_argument("--device_ids", type=list, default=[0], help="device ids")
 
-        self.parser.add_argument(
-            "--visualize", action="store_true", help="visualize mode, batch size = 1"
-        )
-        self.parser.add_argument("--test", action="store_true", help="test mode")
-        self.parser.add_argument("--wandb", action="store_true", help="enable wandb")
+        # eval settings
+        self.parser.add_argument("--use_wandb", action="store_true", help="enable wandb")
+        self.parser.add_argument("--mode", type=str, default="train", choices=["train", "eval", "viusalize"])
 
-        self.parser.add_argument(
-            "--mode",
-            default=0,
-            type=int,
-            help="0: pure RD, 1: img -> mask -> RD model, 2: gaussian filter processing, 3: new idea",
-        )
-        self.parser.add_argument(
-            "--lamb", default=0, type=float, help="ratio for loss function"
-        )
-
-        self.parser.add_argument(
-            "--data",
-            default="data",
-            type=str,
-            help="OCT2017 or RESC",
-            choices=["OCT2017", "RESC"],
-        )
-        self.parser.add_argument(
-            "--batch_size", default=16, type=int, help="batch size, default = 16"
-        )
+        # data settings
+        self.parser.add_argument("--data", type=str, default="OCT2017")
+        self.parser.add_argument("--image_size", type=int, default=224, help="image size")
 
     def get_args(self):
         args = self.parser.parse_args()
