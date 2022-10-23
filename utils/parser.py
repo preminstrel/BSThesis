@@ -18,7 +18,7 @@ class ParserArgs(object):
         # training settings
         self.parser.add_argument("--epochs", type=int, default=200, help="number of epochs of training")
         self.parser.add_argument("--batch_size", type=int, default=16, help="batch size")
-        self.parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
+        self.parser.add_argument("--lr", type=float, default=5e-4, help="learning rate")
         self.parser.add_argument("--resume", type=str, default="", metavar="PATH", help="path to checkpoints")
         self.parser.add_argument("--save_freq", type=int, default=10, help="save frequency")
         self.parser.add_argument("--valid_freq", type=int, default=10, help="validation frequency")
@@ -26,11 +26,12 @@ class ParserArgs(object):
 
         # eval settings
         self.parser.add_argument("--use_wandb", action="store_true", help="enable wandb")
+        self.parser.add_argument("--project", type=str, help="project name for wandb")
         self.parser.add_argument("--mode", type=str, default="train", choices=["train", "eval", "viusalize"])
 
         # data settings
-        self.parser.add_argument("--data", type=str, default="OCT2017")
-        self.parser.add_argument("--image_size", type=int, default=224, help="image size")
+        self.parser.add_argument("--data", type=str, default="ODIR-5k")
+        self.parser.add_argument("--image_size", type=int, default=256, help="image size")
 
     def get_args(self):
         args = self.parser.parse_args()

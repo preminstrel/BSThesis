@@ -5,6 +5,8 @@ import sys
 import torch
 import numpy as np
 import random
+from sklearn.metrics import precision_score, recall_score, f1_score
+from termcolor import colored
 
 from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
@@ -46,21 +48,24 @@ class Trainer(object):
 
     def train(self):
         self.model.train()
-        best_acc = 0
+        best_precision = 0
         save_best = False
         num_params, num_trainable_params = count_parameters(self.model)
+        prev_time = time.time()
         terminal_msg(f"Params in {type(self.model).__name__}: {num_params / 1e6:.4f}M ({num_trainable_params / 1e6:.4f}M trainable). "+"Start training...", 'E')
 
         for epoch in range(self.start_epoch, self.epochs + 1):
-            for i, (img, gt) in enumerate(self.train_dataloader):
+            for i, sample in enumerate(self.train_dataloader):
+                img = sample['image']
+                gt = sample['landmarks']
                 img, gt = img.to(self.device), gt.to(self.device)
 
-                loss, output = self.model.process(img)
-                self.model.backward(output, gt)
+                pred, loss = self.model.process(img, gt)
+                self.model.backward(loss)
 
                 # Determine approximate time left
-                batches_done = self.epoch * self.train_dataloader.__len__() + i
-                batches_left = self.n_epochs * self.train_dataloader.__len__() - batches_done
+                batches_done = epoch * self.train_dataloader.__len__() + i
+                batches_left = self.epochs * self.train_dataloader.__len__() - batches_done
                 time_left = datetime.timedelta(
                     seconds=batches_left * (time.time() - prev_time))
                 prev_time = time.time()
@@ -80,9 +85,9 @@ class Trainer(object):
 
             # save ckpt
             if epoch % self.save_freq == 0 or epoch == self.epochs:
-                acc = self.validate()
-                if acc > best_acc:
-                    best_acc = acc
+                precision, recall, f1 = self.validate()
+                if precision > best_precision:
+                    best_precision = precision
                     save_best = True
                 else:
                     save_best = False
@@ -91,13 +96,20 @@ class Trainer(object):
 
     def validate(self):
         self.model.eval()
-        acc = 0
-        terminal_msg("Start validation phase...", "E")
+        terminal_msg("Start validating...", "E")
         with torch.no_grad:
-            for i, (img, gt) in enumerate(self.valid_dataloader):
+            for i, sample in enumerate(self.valid_dataloader):
+                img = sample['image']
+                gt = sample['landmarks']
                 img, gt = img.to(self.device), gt.to(self.device)
 
-                output = self.model(img)
+                pred, loss = self.model.process(img, gt)
 
-        terminal_msg("Validation phase finished!", "C")
-        return acc
+            precision = precision_score(gt, pred, average='samples')
+            recall = recall_score(gt, pred, average='samples')
+            f1 = f1_score(gt, pred, average='samples')
+
+        print(colored("Precision Score: ", "red") + str(precision) + colored(", Recall Score: ", "red") + str(recall) + colored(", F1 Score: ", "red") + str(f1))
+
+        terminal_msg("Validation finished!", "C")
+        return precision, recall, f1
