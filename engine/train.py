@@ -96,20 +96,32 @@ class Trainer(object):
 
     def validate(self):
         self.model.eval()
-        terminal_msg("Start validating...", "E")
-        with torch.no_grad:
+        print(colored('\n[Executing]', 'blue'), 'Start validating...')
+        pred_list = []
+        gt_list = []
+        with torch.no_grad():
             for i, sample in enumerate(self.valid_dataloader):
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device), gt.to(self.device)
-
                 pred, loss = self.model.process(img, gt)
+                pred = (pred > 0.5)
+                pred = pred.cpu().tolist()
+                gt = gt.cpu().tolist()
 
-            precision = precision_score(gt, pred, average='samples')
-            recall = recall_score(gt, pred, average='samples')
-            f1 = f1_score(gt, pred, average='samples')
+                pred_list.extend(pred)
+                gt_list.extend(gt)
+
+            precision = precision_score(gt_list, pred_list, average='samples')
+            recall = recall_score(gt_list, pred_list, average='samples')
+            f1 = f1_score(gt_list, pred_list, average='samples')
 
         print(colored("Precision Score: ", "red") + str(precision) + colored(", Recall Score: ", "red") + str(recall) + colored(", F1 Score: ", "red") + str(f1))
+
+        if self.args.use_wandb:
+            wandb.log({"Precision Score": precision.item(),
+                       "Recall Score": recall.item(),
+                       "F1 Score": f1.item(), })
 
         terminal_msg("Validation finished!", "C")
         return precision, recall, f1
