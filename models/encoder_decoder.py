@@ -91,64 +91,48 @@ class Encoder(nn.Module):
         )
         bottleneck = Bottleneck(2048, 512, 2, downsample)
         resnet = resnet50(weights="DEFAULT")
-        #list(resnet.children())[-3][0] = bottleneck
         self.resnet = nn.Sequential(*list(resnet.children())[:-2])
-        self.conv = nn.Conv2d(2048, 32, 1)
+        #self.conv = nn.Conv2d(2048, 32, 1)
 
     def forward(self, x):
         x = self.resnet(x)
-        x = self.conv(x)
+        #x = self.conv(x)
         return x
 
 
-class Decoder(nn.Module):
-    def __init__(self, num_clas=36):
-        super(Decoder, self).__init__()
+class Decoder_multi_classification(nn.Module):
+    def __init__(self, num_class=36):
+        super(Decoder_multi_classification, self).__init__()
 
-        self.fc1 = nn.Linear(32*8*8, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, num_clas)
-        self.dropout = nn.Dropout(0.25)
-        #self.fc2 = nn.Linear(1024, 512)
-        #self.fc3 = nn.Linear(512, num_class)
-        #self.dconv1 = nn.ConvTranspose2d(2048, 1024, 3, stride=2, padding=1)
-        # self.dfc3 = nn.Linear(1000, 4096)
-        # self.bn3 = nn.BatchNorm2d(4096)
-        # self.dfc2 = nn.Linear(4096, 4096)
-        # self.bn2 = nn.BatchNorm2d(4096)
-        # self.dfc1 = nn.Linear(4096, 256 * 6 * 6)
-        # self.bn1 = nn.BatchNorm2d(256*6*6)
-        # self.upsample1 = nn.Upsample(scale_factor=2)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = nn.Linear(2048, 1000)
+        self.fc2 = nn.Linear(1000, num_class)
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
+        x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
+        x = self.fc2(x)
+        x = torch.sigmoid(x)
+        return x
+
+
+class Decoder_single_classification(nn.Module):
+    def __init__(self, num_class=36):
+        super(Decoder_single_classification, self).__init__()
+
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = nn.Linear(2048, 1000)
+        self.fc2 = nn.Linear(1000, num_class)
+        self.dropout = nn.Dropout(0.2)
+
+    def forward(self, x):
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
         x = self.dropout(x)
-        x = self.fc3(x)
-        #x = torch.sigmoid(x)
+        x = self.fc2(x)
+        #x = nn.Softmax(x)
         return x
-
-        # x = self.dfc2(x)
-        # x = F.relu(self.bn2(x))
-        # x = self.dfc1(x)
-        # x = F.relu(self.bn1(x))
-        # x = x.view(batch_size, 256, 6, 6)
-        # x = self.upsample1(x)
-        # x = self.dconv5(x)
-        # x = F.relu(x)
-        # x = F.relu(self.dconv4(x))
-        # x = F.relu(self.dconv3(x))
-        # x = self.upsample1(x)
-        # x = self.dconv2(x)
-        # x = F.relu(x)
-        # x = self.upsample1(x)
-        # x = self.dconv1(x)
-        # x = F.sigmoid(x)
-        return x
-
-
-class StandardED(nn.Module):
-    def __init__(self, img_size):
-        super(StandardED, self).__init__()

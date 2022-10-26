@@ -1,5 +1,6 @@
 import time
 import datetime
+from wsgiref import validate
 import wandb
 import sys
 import torch
@@ -10,6 +11,7 @@ from termcolor import colored
 
 from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
+from utils.metrics import multi_label_metrics, single_label_metrics
 
 
 def setup_seed(seed):
@@ -44,10 +46,11 @@ class Trainer(object):
         else:
             self.start_epoch = 1
 
+        self.validate()
+
         self.train()
 
     def train(self):
-        self.model.train()
         best_precision = 0
         save_best = False
         num_params, num_trainable_params = count_parameters(self.model)
@@ -55,6 +58,7 @@ class Trainer(object):
         terminal_msg(f"Params in {type(self.model).__name__}: {num_params / 1e6:.4f}M ({num_trainable_params / 1e6:.4f}M trainable). "+"Start training...", 'E')
 
         for epoch in range(self.start_epoch, self.epochs + 1):
+            self.model.train()
             for i, sample in enumerate(self.train_dataloader):
                 img = sample['image']
                 gt = sample['landmarks']
@@ -85,43 +89,59 @@ class Trainer(object):
 
             # save ckpt
             if epoch % self.save_freq == 0 or epoch == self.epochs:
-                precision, recall, f1 = self.validate()
-                if precision > best_precision:
-                    best_precision = precision
-                    save_best = True
+                if self.valid_freq == 321:
+                    save_checkpoint(self, epoch, False)
                 else:
-                    save_best = False
-                save_checkpoint(self, epoch, save_best)
+                    precision = self.validate()
+                    if precision > best_precision:
+                        best_precision = precision
+                        save_best = True
+                    else:
+                        save_best = False
+                    save_checkpoint(self, epoch, save_best)
         terminal_msg("Training phase finished!", "C")
 
     def validate(self):
-        self.model.eval()
         print(colored('\n[Executing]', 'blue'), 'Start validating...')
         pred_list = []
         gt_list = []
+        threshold = 0
         with torch.no_grad():
+            self.model.eval()
             for i, sample in enumerate(self.valid_dataloader):
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device), gt.to(self.device)
-                pred, loss = self.model.process(img, gt)
-                pred = (pred > 0.5)
+                pred, _ = self.model.process(img, gt)
                 pred = pred.cpu().tolist()
                 gt = gt.cpu().tolist()
+                if self.args.data in ["TAOP"]:
+                    gt = [item for sublist in gt for item in sublist]
+                    gt = [int(x) for x in gt]
 
                 pred_list.extend(pred)
                 gt_list.extend(gt)
+            pred_list = np.array(pred_list)
+            gt_list = np.array(gt_list)
 
-            precision = precision_score(gt_list, pred_list, average='samples')
-            recall = recall_score(gt_list, pred_list, average='samples')
-            f1 = f1_score(gt_list, pred_list, average='samples')
+        if self.args.data in ["ODIR-5K", "RFMiD"]:
+            result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
+            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
+                  str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+            if self.args.use_wandb:
+                wandb.log({"Micro F1 Score": result['micro/f1'],
+                           "Macro F1 Score": result['macro/f1'],
+                           "Samples F1 Score": result['samples/f1'], })
+                acc = np.mean([result['micro/f1'], result['macro/f1'], result['samples/f1']])
 
-        print(colored("Precision Score: ", "red") + str(precision) + colored(", Recall Score: ", "red") + str(recall) + colored(", F1 Score: ", "red") + str(f1))
+        elif self.args.data in ["TAOP"]:
+            result = single_label_metrics(pred_list, gt_list)
+            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
-        if self.args.use_wandb:
-            wandb.log({"Precision Score": precision.item(),
-                       "Recall Score": recall.item(),
-                       "F1 Score": f1.item(), })
+            if self.args.use_wandb:
+                wandb.log({"Micro F1 Score": result['micro/f1'],
+                           "Macro F1 Score": result['macro/f1'], })
+            acc = np.mean([result['micro/f1'], result['macro/f1']])
 
         terminal_msg("Validation finished!", "C")
-        return precision, recall, f1
+        return acc

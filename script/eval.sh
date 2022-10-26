@@ -1,0 +1,2 @@
+# CUDA_VISIBLE_DEVICES=1 python idea.py --mode eval --data ODIR-5K --resume archive/checkpoints/ODIR-5K/model_best.pth
+python idea.py --mode eval --data TAOP --resume archive/checkpoints/TAOP/model_best.pth
