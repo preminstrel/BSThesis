@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import torchvision.models as models
 from torchvision.models import resnet50
 
+from utils.info import terminal_msg
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -83,6 +85,10 @@ class Bottleneck(nn.Module):
 
 
 class Encoder(nn.Module):
+    '''
+    ResNet-50 backbone: [B, 3, 256, 256] --> [B, 2048, 8, 8]
+    '''
+
     def __init__(self):
         super().__init__()
         downsample = nn.Sequential(
@@ -92,47 +98,73 @@ class Encoder(nn.Module):
         bottleneck = Bottleneck(2048, 512, 2, downsample)
         resnet = resnet50(weights="DEFAULT")
         self.resnet = nn.Sequential(*list(resnet.children())[:-2])
-        #self.conv = nn.Conv2d(2048, 32, 1)
 
     def forward(self, x):
         x = self.resnet(x)
-        #x = self.conv(x)
         return x
 
 
 class Decoder_multi_classification(nn.Module):
+    '''
+    Multi label classification Decoder:
+    AvgPool --> FC (Sigmoid)
+    '''
+
     def __init__(self, num_class=36):
         super(Decoder_multi_classification, self).__init__()
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(2048, 1000)
-        self.fc2 = nn.Linear(1000, num_class)
-        self.dropout = nn.Dropout(0.2)
+        self.fc1 = nn.Linear(2048, num_class)
 
     def forward(self, x):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = self.fc2(x)
+        x = self.fc1(x)
         x = torch.sigmoid(x)
         return x
 
 
 class Decoder_single_classification(nn.Module):
+    '''
+    Single label classification Decoder:
+    AvgPool --> FC
+    '''
+
     def __init__(self, num_class=36):
         super(Decoder_single_classification, self).__init__()
-
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(2048, 1000)
-        self.fc2 = nn.Linear(1000, num_class)
-        self.dropout = nn.Dropout(0.2)
+        self.fc1 = nn.Linear(2048, num_class)
 
     def forward(self, x):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = self.fc2(x)
-        #x = nn.Softmax(x)
+        x = self.fc1(x)
         return x
+
+
+def get_task_head(data):
+    decoder = {}
+    if "ODIR-5K" in data:
+        decoder["ODIR-5K"] = Decoder_multi_classification(num_class=8)
+    if "RFMiD" in data:
+        decoder["RFMiD"] = Decoder_multi_classification(num_class=46)
+    if "TAOP" in data:
+        decoder["TAOP"] = Decoder_single_classification(num_class=5)
+    else:
+        terminal_msg("Args.Data Error (From get_task_head)", "F")
+        exit()
+    return decoder
+
+
+def get_task_loss(data):
+    loss = {}
+    if "ODIR-5K" in data:
+        loss["ODIR-5K"] = nn.BCELoss()
+    if "RFMiD" in data:
+        loss["RFMiD"] = nn.BCELoss()
+    if "TAOP" in data:
+        loss["TAOP"] = nn.CrossEntropyLoss()
+    else:
+        terminal_msg("Args.Data Error (From get_task_loss)", "F")
+        exit()
+    return loss

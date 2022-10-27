@@ -30,8 +30,12 @@ class ParserArgs(object):
         self.parser.add_argument("--mode", type=str, default="train", choices=["train", "eval", "viusalize"])
 
         # data settings
-        self.parser.add_argument("--data", type=str, default="ODIR-5k")
+        self.parser.add_argument("--data", type=str, default="ODIR-5K")
         self.parser.add_argument("--image_size", type=int, default=256, help="image size")
+
+        # multi-task learning
+        self.parser.add_argument("--multi_task", action="store_true", help="enable wandb")
+        self.parser.add_argument("--method", type=str, default="hard_param_share")
 
     def get_args(self):
         args = self.parser.parse_args()

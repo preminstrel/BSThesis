@@ -12,6 +12,7 @@ from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
 from utils.metrics import Multi_AUC, multi_label_metrics, single_label_metrics
 
+
 class Evaluation(object):
     def __init__(self, args, model, device, valid_dataloader=None):
         self.args = args
@@ -31,7 +32,7 @@ class Evaluation(object):
             terminal_msg("Please define ckpt!", "F")
 
         self.eval()
-    
+
     def eval(self):
         terminal_msg("Start Evaluation...")
         pred_list = []
@@ -52,15 +53,16 @@ class Evaluation(object):
 
                 pred_list.extend(pred)
                 gt_list.extend(gt)
-                print(gt)
-                print(pred)
-                exit()
+                # print(gt)
+                # print(pred)
+                # exit()
             pred_list = np.array(pred_list)
             gt_list = np.array(gt_list)
-            
+
         if self.args.data in ["ODIR-5K", "RFMiD"]:
             result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
-            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
+                  str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
 
         elif self.args.data in ["TAOP"]:
             result = single_label_metrics(pred_list, gt_list)
