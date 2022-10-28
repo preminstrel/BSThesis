@@ -1,5 +1,7 @@
 from socket import MsgFlag
 import torch
+import warnings
+
 from .info import terminal_msg
 
 
@@ -30,9 +32,17 @@ def save_checkpoint(self, epoch, save_best=False):
     state = {
         'arch': arch,
         'epoch': epoch,
-        'state_dict': self.model.resnet.state_dict(),
-        'optimizer': self.model.optimizer.state_dict(),
+        'encoder': self.model.encoder.state_dict(),
+        # 'optimizer': optimizer.state_dict(),
     }
+    if self.args.multi_task:
+        for i in self.model.children():
+            if str(i.__class__.__name__) == "Encoder":
+                continue
+            state[str(i.__class__.__name__)] = self.model.decoder[i.__class__.__name__].state_dict()
+    else:
+        state["decoder"] = self.model.decoder.state_dict()
+
     filename = str('archive/checkpoints/' + arch + '/epoch_{}.pth'.format(epoch))
     torch.save(state, filename)
     terminal_msg("Successfully saved ckpt to '{}'.".format(filename), "C")
@@ -55,8 +65,16 @@ def resume_checkpoint(self, resume_path):
 
     # load architecture params from checkpoint.
     if checkpoint['arch'] != type(self.model).__name__:
-        terminal_msg("Architecture in ckpt is different from the model.", "F")
+        terminal_msg("Architecture in ckpt is different from the model ({}).".format(type(self.model).__name__), "F")
         exit()
-    self.model.resnet.load_state_dict(checkpoint['state_dict'])
-    self.mode.optimizer.load_state_dict(checkpoint['optimizer'])
+    self.model.encoder.load_state_dict(checkpoint['encoder'])
+    if self.args.multi_task:
+        for name, layer in self.model.named_children():
+            print(name)
+            if name == "encoder":
+                continue
+            self.model.decoder[name].load_state_dict(checkpoint[name])
+    else:
+        self.model.decoder.load_state_dict(checkpoint['decoder'])
+    # self.optimizer.load_state_dict(checkpoint['optimizer'])
     terminal_msg("Checkpoint loaded successfully!", "C")

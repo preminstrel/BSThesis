@@ -146,10 +146,13 @@ def get_task_head(data):
     decoder = {}
     if "ODIR-5K" in data:
         decoder["ODIR-5K"] = Decoder_multi_classification(num_class=8)
+        decoder["ODIR-5K"].__name__ = "ODIR-5K"
     if "RFMiD" in data:
         decoder["RFMiD"] = Decoder_multi_classification(num_class=46)
+        decoder["RFMiD"].__name__ = "RFMiD"
     if "TAOP" in data:
         decoder["TAOP"] = Decoder_single_classification(num_class=5)
+        decoder["TAOP"].__name__ = "TAOP"
     else:
         terminal_msg("Args.Data Error (From get_task_head)", "F")
         exit()
