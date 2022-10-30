@@ -7,14 +7,29 @@ from torchvision.transforms import transforms
 import pandas as pd
 from torch.utils.data import DataLoader
 from utils.info import terminal_msg
+from utils.image import RandomGaussianBlur, get_color_distortion
 
 
-def get_transforms(img_size):
+def get_train_transforms(img_size):
+    transform = transforms.Compose([
+        #transforms.Resize((img_size, img_size)),
+        transforms.RandomResizedCrop(img_size),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.Compose([
+            get_color_distortion(),
+            RandomGaussianBlur(),
+        ]),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    return transform
+
+
+def get_valid_transforms(img_size):
     transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     return transform
 
@@ -100,10 +115,19 @@ class TrainDataset(data.Dataset):
             exit()
 
     def load_image(self, path):
-        img = Image.open(path).convert('RGB')
+        image = Image.open(path).convert('RGB')
+
+        # crop black pixels
+        image = np.array(image)
+        mask = image > 0
+        coordinates = np.argwhere(mask)
+        x0, y0, s0 = coordinates.min(axis=0)
+        x1, y1, s1 = coordinates.max(axis=0) + 1
+        image = image[x0:x1, y0:y1]
+        image = Image.fromarray(image)
         if self.transform is not None:
-            img = self.transform(img)
-        return img
+            image = self.transform(image)
+        return image
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):

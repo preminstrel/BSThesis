@@ -15,7 +15,7 @@ from utils.info import terminal_msg, epic_start, get_device
 from utils.parser import ParserArgs
 from utils.model import save_checkpoint, resume_checkpoint
 
-from data.dataset import TrainDataset, ValidDataset, get_transforms, get_train_dataloader, get_valid_dataloader
+from data.dataset import TrainDataset, ValidDataset, get_train_transforms, get_valid_transforms, get_train_dataloader, get_valid_dataloader
 
 
 if __name__ == "__main__":
@@ -33,15 +33,17 @@ if __name__ == "__main__":
     if args.use_wandb:
         wandb.init(project=args.project)
 
-    transfrom = get_transforms(256)
+    train_transfrom = get_train_transforms(256)
+    valid_transform = get_valid_transforms(256)
+
     if args.multi_task:
         terminal_msg("Processing the datasets for multi-task model", "E")
-        train_dataloaders = get_train_dataloader(args, transfrom)
-        valid_dataloaders = get_valid_dataloader(args, transfrom)
+        train_dataloaders = get_train_dataloader(args, train_transfrom)
+        valid_dataloaders = get_valid_dataloader(args, valid_transform)
     else:
         terminal_msg("Processing the dataset for single-task model", "E")
-        train_dataset = TrainDataset(args.data, transform=transfrom)
-        valid_dataset = ValidDataset(args.data, transform=transfrom)
+        train_dataset = TrainDataset(args.data, transform=train_transfrom)
+        valid_dataset = ValidDataset(args.data, transform=valid_transform)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
         valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
     terminal_msg('DataLoader ({}) is ready!'.format(args.data), 'C')
