@@ -36,21 +36,22 @@ def save_checkpoint(self, epoch, save_best=False):
         # 'optimizer': optimizer.state_dict(),
     }
     if self.args.multi_task:
-        for i in self.model.children():
-            if str(i.__class__.__name__) == "Encoder":
+        for name, layer in self.model.named_children():
+            if name == "encoder":
                 continue
-            state[str(i.__class__.__name__)] = self.model.decoder[i.__class__.__name__].state_dict()
+            state[name] = self.model.decoder[name].state_dict()
     else:
         state["decoder"] = self.model.decoder.state_dict()
-
-    filename = str('archive/checkpoints/' + arch + '/epoch_{}.pth'.format(epoch))
-    torch.save(state, filename)
-    terminal_msg("Successfully saved ckpt to '{}'.".format(filename), "C")
 
     if save_best:
         best_path = str('archive/checkpoints/' + arch + '/model_best.pth')
         torch.save(state, best_path)
         terminal_msg("Best model detected, saved ckpt to '{}'.".format(best_path), "C")
+        return
+
+    filename = str('archive/checkpoints/' + arch + '/epoch_{}.pth'.format(epoch))
+    torch.save(state, filename)
+    terminal_msg("Successfully saved ckpt to '{}'.".format(filename), "C")
 
 
 def resume_checkpoint(self, resume_path):
@@ -70,7 +71,6 @@ def resume_checkpoint(self, resume_path):
     self.model.encoder.load_state_dict(checkpoint['encoder'])
     if self.args.multi_task:
         for name, layer in self.model.named_children():
-            print(name)
             if name == "encoder":
                 continue
             self.model.decoder[name].load_state_dict(checkpoint[name])

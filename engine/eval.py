@@ -6,6 +6,7 @@ import torch
 import numpy as np
 import random
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+import sklearn.metrics as metrics
 from termcolor import colored
 
 from utils.info import terminal_msg
@@ -53,19 +54,25 @@ class Single_Task_Evaluation(object):
 
                 pred_list.extend(pred)
                 gt_list.extend(gt)
-                # print(gt)
-                # print(pred)
-                # exit()
+
             pred_list = np.array(pred_list)
             gt_list = np.array(gt_list)
 
         if self.args.data in ["ODIR-5K", "RFMiD"]:
-            result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
-            print(colored("AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
+            threshold = 0.5
+            # gt = gt_list.flatten()
+            # pr = pred_list.flatten()
+            # kappa = metrics.cohen_kappa_score(gt, pr>th)
+            # f1 = metrics.f1_score(gt, pr>th, average='micro')
+            # auc = metrics.roc_auc_score(gt, pr)
+            # print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", Micro F1 Score: ", "red") + str(f1))
+
+            result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
+            print(colored("Avg AUC, Avg Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
                   str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
 
-        elif self.args.data in ["TAOP"]:
+        elif self.args.data in ["TAOP", "Kaggle", "APTOS"]:
             result = single_label_metrics(pred_list, gt_list)
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 

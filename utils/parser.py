@@ -17,11 +17,13 @@ class ParserArgs(object):
     def get_general_parser(self):
         # training settings
         self.parser.add_argument("--epochs", type=int, default=200, help="number of epochs of training")
-        self.parser.add_argument("--batch_size", type=int, default=16, help="batch size")
-        self.parser.add_argument("--lr", type=float, default=5e-4, help="learning rate")
+        self.parser.add_argument("--batches", type=int, default=100, help="number of batches in an epoch")
+        self.parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+        self.parser.add_argument("--num_workers", type=int, default=8, help="num_workers")
+        self.parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
         self.parser.add_argument("--resume", type=str, default="", metavar="PATH", help="path to checkpoints")
-        self.parser.add_argument("--save_freq", type=int, default=10, help="save frequency")
-        self.parser.add_argument("--valid_freq", type=int, default=10, help="validation frequency")
+        self.parser.add_argument("--save_freq", type=int, default=50, help="save frequency")
+        self.parser.add_argument("--valid_freq", type=int, default=1, help="validation frequency")
         self.parser.add_argument("--device_ids", type=list, default=[0], help="device ids")
 
         # eval settings
@@ -30,8 +32,8 @@ class ParserArgs(object):
         self.parser.add_argument("--mode", type=str, default="train", choices=["train", "eval", "viusalize"])
 
         # data settings
-        self.parser.add_argument("--data", type=str, default="ODIR-5K")
-        self.parser.add_argument("--image_size", type=int, default=256, help="image size")
+        self.parser.add_argument("--data", type=str, default="TAOP")
+        self.parser.add_argument("--image_size", type=int, default=224, help="image size")
 
         # multi-task learning
         self.parser.add_argument("--multi_task", action="store_true", help="enable wandb")

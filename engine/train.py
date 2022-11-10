@@ -10,6 +10,8 @@ import random
 from sklearn.metrics import precision_score, recall_score, f1_score
 from termcolor import colored
 
+from data.dataset import get_data_weights, get_batch
+
 from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
 from utils.metrics import Multi_AUC_and_Kappa, multi_label_metrics, single_label_metrics, roc_auc_score, accuracy_score
@@ -18,8 +20,8 @@ from utils.metrics import Multi_AUC_and_Kappa, multi_label_metrics, single_label
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    np.random.seed(seed)
-    random.seed(seed)
+    # np.random.seed(seed)
+    # random.seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
@@ -85,21 +87,19 @@ class Single_Task_Trainer(object):
                 if self.args.use_wandb:
                     wandb.log({"loss": loss.item()})
 
+            # save best model
             if epoch % self.valid_freq == 0:
-                self.validate()
-
-            # save ckpt
-            if epoch % self.save_freq == 0 or epoch == self.epochs:
-                if self.valid_freq == 321:
-                    save_checkpoint(self, epoch, False)
-                else:
-                    precision = self.validate()
-                    if precision > best_precision:
-                        best_precision = precision
-                        save_best = True
-                    else:
-                        save_best = False
+                precision = self.validate()
+                if precision > best_precision:
+                    best_precision = precision
+                    save_best = True
                     save_checkpoint(self, epoch, save_best)
+                else:
+                    save_best = False
+
+            # save ckpt for fixed freq
+            if epoch % self.save_freq == 0 or epoch == self.epochs:
+                save_checkpoint(self, epoch, False)
         terminal_msg("Training phase finished!", "C")
 
     def validate(self):
@@ -122,20 +122,22 @@ class Single_Task_Trainer(object):
 
                 pred_list.extend(pred)
                 gt_list.extend(gt)
-            pred_list = np.array(pred_list)
-            gt_list = np.array(gt_list)
+            pred_list = np.array(pred_list, dtype=np.float32)
+            gt_list = np.array(gt_list, dtype=np.float32)
 
         if self.args.data in ["ODIR-5K", "RFMiD"]:
             result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
-            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
-                  str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+            auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
+            print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
             if self.args.use_wandb:
-                wandb.log({"Micro F1 Score": result['micro/f1'],
-                           "Macro F1 Score": result['macro/f1'],
-                           "Samples F1 Score": result['samples/f1'], })
-                acc = np.mean([result['micro/f1'], result['macro/f1'], result['samples/f1']])
+                wandb.log({"AUC": auc,
+                           "Kappa": kappa,
+                           "F1 Score": result['micro/f1'], })
+                # "Macro F1 Score": result['macro/f1'],
+                # "Samples F1 Score": result['samples/f1'],})
+            acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
 
-        elif self.args.data in ["TAOP"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
             result = single_label_metrics(pred_list, gt_list)
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
@@ -149,7 +151,7 @@ class Single_Task_Trainer(object):
 
 
 class Multi_Task_Trainer(object):
-    def __init__(self, args, model, device, train_dataloaders=None, valid_dataloaders=None):
+    def __init__(self, args, model, device, train_data=None, valid_dataloaders=None):
         self.args = args
         self.model = model
         self.device = device
@@ -158,13 +160,13 @@ class Multi_Task_Trainer(object):
         if len(self.args.device_ids) > 1:
             model = torch.nn.DataParallel(model, device_ids=self.args.device_ids)
 
-        self.train_dataloaders = train_dataloaders
+        self.train_data = train_data
         self.valid_dataloaders = valid_dataloaders
 
         self.epochs = self.args.epochs
+        self.batches = self.args.batches
         self.save_freq = self.args.save_freq
         self.valid_freq = self.args.valid_freq
-        self.batch_size = self.args.batch_size
 
         if self.args.resume:
             resume_checkpoint(self, self.args.resume)
@@ -181,60 +183,60 @@ class Multi_Task_Trainer(object):
         prev_time = time.time()
         terminal_msg(f"Params in {type(self.model).__name__}: {self.model.num_params / 1e6:.4f}M ({self.model.num_trainable_params / 1e6:.4f}M trainable). "+"Start training...", 'E')
 
+        data_dict = self.args.data.split(", ")  # ['ODIR-5K', 'TAOP', 'RFMiD']
+        weights = get_data_weights(self.args)
+
         for epoch in range(self.start_epoch, self.epochs + 1):
             self.model.train()
 
-            roll = random.randint(0, len(self.train_dataloaders)-1)  # Random select a dataset
-            dataloader_dict = self.args.data.split(", ")  # ['ODIR-5K', 'TAOP', 'RFMiD']
-            train_dataloader_name = dataloader_dict[roll]
-            train_dataloader = self.train_dataloaders[train_dataloader_name]
-            print("\rSelect dataset {} in this epoch".format(train_dataloader_name))
+            for batch in range(self.batches):
+                # weighted random select a dataset
+                roll = random.choices(data_dict)[0]
+                data = self.train_data[roll]
+                #print("\rSelect dataset {} in this batch".format(roll))
 
-            for i, sample in enumerate(train_dataloader):
+                sample = get_batch(data=data)
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device), gt.to(self.device)
 
-                pred, loss = self.model.process(img, gt, train_dataloader_name)
+                pred, loss = self.model.process(img, gt, roll)
                 self.model.backward(loss)
 
                 # Determine approximate time left
-                batches_done = epoch * train_dataloader.__len__() + i
-                batches_left = self.epochs * train_dataloader.__len__() - batches_done
-                time_left = datetime.timedelta(
-                    seconds=batches_left * (time.time() - prev_time))
+                batch_done = epoch * self.batches + batch
+                batches_left = self.epochs * self.batches - batch_done
+                time_left = datetime.timedelta(seconds=batches_left * (time.time() - prev_time))
                 prev_time = time.time()
 
                 # Print log
                 sys.stdout.write("\r[Epoch %d/%d] [Batch %d/%d] [loss: %f] ETA: %s" %
                                  (epoch, self.epochs,
-                                  i, train_dataloader.__len__(),
+                                  batch, self.batches,
                                   loss.item(),
                                   time_left))
                 # wandb
                 if self.args.use_wandb:
-                    wandb.log({"loss ({})".format(train_dataloader_name): loss.item()})
+                    wandb.log({"loss ({})".format(roll): loss.item()})
 
+            # save best model
             if epoch % self.valid_freq == 0:
-                self.validate()
-
-            # save ckpt
-            if epoch % self.save_freq == 0 or epoch == self.epochs:
-                if self.valid_freq == 321:
-                    save_checkpoint(self, epoch, False)
-                else:
-                    precision = self.validate()
-                    if precision > best_precision:
-                        best_precision = precision
-                        save_best = True
-                    else:
-                        save_best = False
+                precision = self.validate()
+                if precision > best_precision:
+                    best_precision = precision
+                    save_best = True
                     save_checkpoint(self, epoch, save_best)
+                else:
+                    save_best = False
+
+            # save ckpt for fixed freq
+            if epoch % self.save_freq == 0 or epoch == self.epochs:
+                save_checkpoint(self, epoch, False)
         terminal_msg("Training phase finished!", "C")
 
     def validate(self):
         acc = []
-
+        all_acc = []
         print(colored('\n[Executing]', 'blue'), 'Start validating...')
         threshold = 0.5
         dataloader_dict = self.args.data.split(", ")
@@ -255,7 +257,7 @@ class Multi_Task_Trainer(object):
                     pred, _ = self.model.process(img, gt, valid_dataloader_name)
                     pred = pred.cpu().tolist()
                     gt = gt.cpu().tolist()
-                    if self.args.data in ["TAOP"]:
+                    if self.args.data in ["TAOP", "APTOS", "Kaggle"]:
                         gt = [item for sublist in gt for item in sublist]
                         gt = [int(x) for x in gt]
 
@@ -265,34 +267,30 @@ class Multi_Task_Trainer(object):
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
 
-            if valid_dataloader_name in ["ODIR-5K"]:
-                result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
-                print(colored("AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
+            if valid_dataloader_name in ["ODIR-5K", "RFMiD"]:
+                result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
                 auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
-                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
-                      str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
-                acc.append(np.mean([auc, kappa, result['samples/f1']]))
+                print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
                 if self.args.use_wandb:
-                    wandb.log({"ODIR-5K Metrics": np.mean([auc, kappa, result['samples/f1']])})
+                    wandb.log({"AUC ({})".format(valid_dataloader_name): auc,
+                               "Kappa ({})".format(valid_dataloader_name): kappa,
+                               "F1 Score ({})".format(valid_dataloader_name): result['micro/f1'], })
+                    # "Macro F1 Score": result['macro/f1'],
+                    # "Samples F1 Score": result['samples/f1'],})
+                acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
+                all_acc.append(acc)
 
-            elif valid_dataloader_name in ["TAOP"]:
+            elif valid_dataloader_name in ["TAOP", "APTOS", "Kaggle"]:
                 result = single_label_metrics(pred_list, gt_list)
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
-                acc.append(accuracy_score(gt_list, pred_list))
-                if self.args.use_wandb:
-                    wandb.log({"TAOP Metrics": accuracy_score(gt_list, pred_list)})
 
-            elif valid_dataloader_name == "RFMiD":
-                result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
-                pred_list = np.array(pred_list > 0.5, dtype=float)
-                print(colored("Disease Risk AUC: ", "red") + str(roc_auc_score(gt_list[:, 0], pred_list[:, 0], average='micro', sample_weight=None)))
-                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
-                      str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
-                acc.append(np.mean([roc_auc_score(gt_list[:, 0], pred_list[:, 0], average='micro', sample_weight=None), result['samples/f1']]))
                 if self.args.use_wandb:
-                    wandb.log({"RFMiD Metrics": np.mean([roc_auc_score(gt_list[:, 0], pred_list[:, 0], average='micro', sample_weight=None), result['samples/f1']])})
+                    wandb.log({"Accuracy ({})".format(valid_dataloader_name): result['micro/f1'], })
+                    # "Macro F1 Score ({})".format(valid_dataloader_name): result['macro/f1'],})
+                acc = np.mean([result['micro/f1'], result['macro/f1']])
+                all_acc.append(acc)
 
-        acc = np.array(acc).mean()
+        precision = np.array(all_acc).mean()
         terminal_msg("Validation finished!", "C")
 
-        return acc
+        return precision

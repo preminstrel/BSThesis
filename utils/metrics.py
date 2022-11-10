@@ -8,7 +8,6 @@ def Multi_AUC_and_Kappa(pred_list, gt_list):
     temp = []
     temp2 = []
     pred_list = np.array(pred_list > 0.5, dtype=float)
-    #print(roc_auc_score(gt_list[:, 0], pred_list[:, 0], average='micro', sample_weight=None))
     for i in range(gt_list.shape[1]):
         auc = roc_auc_score(gt_list[:, i], pred_list[:, i], average='micro', sample_weight=None)
         kappa = cohen_kappa_score(gt_list[:, i], pred_list[:, i])
