@@ -8,15 +8,24 @@ import torch
 from utils.info import terminal_msg, get_device
 from utils.model import count_parameters
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class build_single_task_model(nn.Module):
     '''
     build single-task model as baselines
     '''
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def __init__(self, args):
         super(build_single_task_model, self).__init__()
         self.encoder = Encoder()
         self.args = args
         if args.data == "ODIR-5K":
+<<<<<<< HEAD
             self.decoder = Decoder_multi_classification(num_class = 8)
             type(self).__name__ = "ODIR-5K"
         elif args.data == "RFMiD":
@@ -34,11 +43,28 @@ class build_single_task_model(nn.Module):
         elif args.data == "KaggleDR+":
             self.decoder = Decoder_multi_classification(num_class = 28)
             type(self).__name__ = "KaggleDR+"
+=======
+            self.decoder = Decoder_multi_classification(num_class=8)
+            type(self).__name__ = "ODIR-5K"
+        elif args.data == "RFMiD":
+            self.decoder = Decoder_multi_classification(num_class=29)
+            type(self).__name__ = "RFMiD"
+        elif args.data == "TAOP":
+            self.decoder = Decoder_single_classification(num_class=5)
+            type(self).__name__ = "TAOP"
+        elif args.data == "APTOS":
+            self.decoder = Decoder_single_classification(num_class=5)
+            type(self).__name__ = "APTOS"
+        elif args.data == "Kaggle":
+            self.decoder = Decoder_single_classification(num_class=5)
+            type(self).__name__ = "Kaggle"
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         else:
             terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
             exit()
 
         weights = torch.tensor([2.2477, 3.8860, 21.4524, 22.2862, 24.7333, 35.8352, 26.0620, 5.5568])
+<<<<<<< HEAD
         self.ODIR_5K_bce_loss = nn.BCELoss(weight = weights)
 
         weights = torch.tensor([1.264, 5.106, 19.2, 6.057, 13.913, 19.01, 26.301, 10.323, 137.143, 40.851, 128.0, 51.892, 6.809, 68.571, 320.0, 120.0, 29.538, 33.103, 384.0, 112.941, 174.545, 137.143, 44.651, 60.0, 128.0, 87.273, 174.545, 320.0, 56.471])
@@ -46,6 +72,14 @@ class build_single_task_model(nn.Module):
 
         self.KaggleDR_bce_loss = nn.BCELoss()
 
+=======
+        self.ODIR_5K_bce_loss = nn.BCELoss(weight=weights)
+
+        weights = torch.tensor([1.264, 5.106, 19.2, 6.057, 13.913, 19.01, 26.301, 10.323, 137.143, 40.851, 128.0, 51.892, 6.809, 68.571, 320.0,
+                               120.0, 29.538, 33.103, 384.0, 112.941, 174.545, 137.143, 44.651, 60.0, 128.0, 87.273, 174.545, 320.0, 56.471])
+        self.RFMiD_bce_loss = nn.BCELoss()
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         self.nll_loss = nn.CrossEntropyLoss()
 
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()), lr=args.lr)
@@ -63,18 +97,29 @@ class build_single_task_model(nn.Module):
             loss = self.ODIR_5K_bce_loss(pred, gt)
         elif self.args.data == "RFMiD":
             loss = self.RFMiD_bce_loss(pred, gt)
+<<<<<<< HEAD
         elif self.args.data == "KaggleDR+":
             loss = self.KaggleDR_bce_loss(pred, gt)
         elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
             gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.nll_loss(pred, gt)
             pred = torch.argmax(pred, dim = 1)
+=======
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
+            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.nll_loss(pred, gt)
+            pred = torch.argmax(pred, dim=1)
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         else:
             terminal_msg("Error (From build_single_task_model.process)", "F")
             exit()
         return pred, loss
 
+<<<<<<< HEAD
     def backward(self, loss = None):
+=======
+    def backward(self, loss=None):
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         loss.backward()
         self.optimizer.step()
 
@@ -83,6 +128,10 @@ class build_hard_param_share_model(nn.Module):
     '''
     build hard params shared multi-task model
     '''
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def __init__(self, args):
         super(build_hard_param_share_model, self).__init__()
         self.encoder = Encoder()
@@ -102,7 +151,11 @@ class build_hard_param_share_model(nn.Module):
             num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
             num_params += num_params_increment
             num_trainable_params += num_trainable_params_increment
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         self.num_params = num_params
         self.num_trainable_params = num_trainable_params
 
@@ -124,13 +177,23 @@ class build_hard_param_share_model(nn.Module):
         if head in ["TAOP", "APTOS", "Kaggle"]:
             gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
+<<<<<<< HEAD
             pred = torch.argmax(pred, dim = 1)
+=======
+            pred = torch.argmax(pred, dim=1)
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
             return pred, loss
 
         loss = self.loss[head](pred, gt)
 
         return pred, loss
 
+<<<<<<< HEAD
     def backward(self, loss = None):
         loss.backward()
         self.optimizer.step()
+=======
+    def backward(self, loss=None):
+        loss.backward()
+        self.optimizer.step()
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a

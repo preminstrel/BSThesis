@@ -13,6 +13,10 @@ from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
 from utils.metrics import Multi_AUC_and_Kappa, multi_label_metrics, single_label_metrics
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class Single_Task_Evaluation(object):
     def __init__(self, args, model, device, valid_dataloader=None):
         self.args = args
@@ -32,7 +36,11 @@ class Single_Task_Evaluation(object):
             terminal_msg("Please define ckpt!", "F")
 
         self.eval()
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def eval(self):
         terminal_msg("Start Evaluation...")
         pred_list = []
@@ -56,8 +64,13 @@ class Single_Task_Evaluation(object):
 
             pred_list = np.array(pred_list)
             gt_list = np.array(gt_list)
+<<<<<<< HEAD
             
         if self.args.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
+=======
+
+        if self.args.data in ["ODIR-5K", "RFMiD"]:
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
             threshold = 0.5
             # gt = gt_list.flatten()
             # pr = pred_list.flatten()
@@ -68,7 +81,12 @@ class Single_Task_Evaluation(object):
 
             result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
             print(colored("Avg AUC, Avg Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
+<<<<<<< HEAD
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+=======
+            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
+                  str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 
         elif self.args.data in ["TAOP", "Kaggle", "APTOS"]:
             result = single_label_metrics(pred_list, gt_list)
@@ -76,6 +94,10 @@ class Single_Task_Evaluation(object):
 
         terminal_msg("Evaluation phase finished!", "C")
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class Multi_Task_Evaluation(object):
     def __init__(self, args, model, device, valid_dataloaders=None):
         self.args = args
@@ -95,7 +117,11 @@ class Multi_Task_Evaluation(object):
             terminal_msg("Please define ckpt!", "F")
 
         self.eval()
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def eval(self):
         terminal_msg("Start Evaluation...")
         threshold = 0.5
@@ -117,7 +143,11 @@ class Multi_Task_Evaluation(object):
                     pred, _ = self.model.process(img, gt, valid_dataloader_name)
                     pred = pred.cpu().tolist()
                     gt = gt.cpu().tolist()
+<<<<<<< HEAD
                     if self.args.data in ["TAOP", "Kaggle", "APTOS"]:
+=======
+                    if self.args.data in ["TAOP"]:
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
                         gt = [item for sublist in gt for item in sublist]
                         gt = [int(x) for x in gt]
 
@@ -128,6 +158,7 @@ class Multi_Task_Evaluation(object):
                     # exit()
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
+<<<<<<< HEAD
                 
             if valid_dataloader_name in ["ODIR-5K", "KaggleDR+", "RFMiD"]:
                 result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
@@ -139,3 +170,24 @@ class Multi_Task_Evaluation(object):
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
         terminal_msg("Evaluation phase finished!", "C")
+=======
+
+            if valid_dataloader_name in ["ODIR-5K"]:
+                result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
+                print(colored("AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
+                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
+                      str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+
+            elif valid_dataloader_name in ["TAOP"]:
+                result = single_label_metrics(pred_list, gt_list)
+                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
+
+            elif valid_dataloader_name == "RFMiD":
+                result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
+                pred_list = np.array(pred_list > 0.5, dtype=float)
+                print(colored("Disease Risk AUC: ", "red") + str(roc_auc_score(gt_list[:, 0], pred_list[:, 0], average='micro', sample_weight=None)))
+                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") +
+                      str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+
+        terminal_msg("Evaluation phase finished!", "C")
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a

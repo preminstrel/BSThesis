@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #CUDA_VISIBLE_DEVICES=1 python idea.py --mode eval --data ODIR-5K --resume archive/checkpoints/ODIR-5K/baseline.pth
 #python idea.py --mode eval --data TAOP --resume archive/checkpoints/TAOP/model_best.pth
 #Micro F1 Score: 0.7811447811447811, Macro F1 Score: 0.7736465847333169
@@ -7,3 +8,7 @@
 # Micro F1 Score: 0.7091295116772824, Macro F1 Score: 0.6009858310022451, Samples F1 Score: 0.6907166907166907
 
 # CUDA_VISIBLE_DEVICES=1 python idea.py --mode eval --multi_task --batch_size 64 --data "ODIR-5K, TAOP, RFMiD, KaggleDR+, Kaggle, APTOS" --resume archive/checkpoints/Hard_Params/model_best.pth
+=======
+# CUDA_VISIBLE_DEVICES=1 python idea.py --mode eval --data ODIR-5K --resume archive/checkpoints/ODIR-5K/model_best.pth
+python idea.py --mode eval --data TAOP --resume archive/checkpoints/TAOP/model_best.pth
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a

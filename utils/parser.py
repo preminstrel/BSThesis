@@ -17,9 +17,15 @@ class ParserArgs(object):
     def get_general_parser(self):
         # training settings
         self.parser.add_argument("--epochs", type=int, default=200, help="number of epochs of training")
+<<<<<<< HEAD
         self.parser.add_argument("--batches", type=int, default=200, help="number of batches in an epoch")
         self.parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         self.parser.add_argument("--num_workers", type=int, default=16, help="num_workers")
+=======
+        self.parser.add_argument("--batches", type=int, default=100, help="number of batches in an epoch")
+        self.parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+        self.parser.add_argument("--num_workers", type=int, default=8, help="num_workers")
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         self.parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
         self.parser.add_argument("--resume", type=str, default="", metavar="PATH", help="path to checkpoints")
         self.parser.add_argument("--save_freq", type=int, default=50, help="save frequency")

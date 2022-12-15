@@ -1,6 +1,10 @@
 from socket import MsgFlag
 import torch
+<<<<<<< HEAD
 import warnings 
+=======
+import warnings
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 
 from .info import terminal_msg
 
@@ -33,7 +37,11 @@ def save_checkpoint(self, epoch, save_best=False):
         'arch': arch,
         'epoch': epoch,
         'encoder': self.model.encoder.state_dict(),
+<<<<<<< HEAD
         #'optimizer': optimizer.state_dict(),
+=======
+        # 'optimizer': optimizer.state_dict(),
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     }
     if self.args.multi_task:
         for name, layer in self.model.named_children():
@@ -76,5 +84,10 @@ def resume_checkpoint(self, resume_path):
             self.model.decoder[name].load_state_dict(checkpoint[name])
     else:
         self.model.decoder.load_state_dict(checkpoint['decoder'])
+<<<<<<< HEAD
     #self.optimizer.load_state_dict(checkpoint['optimizer'])
     terminal_msg("Checkpoint loaded successfully (epoch {})!".format(checkpoint['epoch']), "C")
+=======
+    # self.optimizer.load_state_dict(checkpoint['optimizer'])
+    terminal_msg("Checkpoint loaded successfully!", "C")
+>>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
