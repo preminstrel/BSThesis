@@ -12,10 +12,6 @@ def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class BasicBlock(nn.Module):
     expansion = 1
 
@@ -47,10 +43,6 @@ class BasicBlock(nn.Module):
 
         return out
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -89,18 +81,10 @@ class Bottleneck(nn.Module):
 
         return out
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class Encoder(nn.Module):
     '''
     ResNet-50 backbone: [B, 3, 256, 256] --> [B, 2048, 8, 8]
     '''
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def __init__(self):
         super().__init__()
         # downsample = nn.Sequential(
@@ -115,19 +99,11 @@ class Encoder(nn.Module):
         x = self.resnet(x)
         return x
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class Decoder_multi_classification(nn.Module):
     '''
     Multi label classification Decoder:
     AvgPool --> FC (Sigmoid)
     '''
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def __init__(self, num_class=36):
         super(Decoder_multi_classification, self).__init__()
 
@@ -141,19 +117,11 @@ class Decoder_multi_classification(nn.Module):
         x = torch.sigmoid(x)
         return x
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 class Decoder_single_classification(nn.Module):
     '''
     Single label classification Decoder:
     AvgPool --> FC
     '''
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     def __init__(self, num_class=36):
         super(Decoder_single_classification, self).__init__()
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -165,7 +133,6 @@ class Decoder_single_classification(nn.Module):
         x = self.fc1(x)
         return x
 
-<<<<<<< HEAD
 def get_task_head(data):
     decoder = {}
     if "ODIR-5K" in data:
@@ -188,53 +155,20 @@ def get_task_head(data):
         decoder["Kaggle"].__name__ = "Kaggle"
     return decoder
 
-=======
-
-def get_task_head(data):
-    decoder = {}
-    if "ODIR-5K" in data:
-        decoder["ODIR-5K"] = Decoder_multi_classification(num_class=8)
-        decoder["ODIR-5K"].__name__ = "ODIR-5K"
-    if "RFMiD" in data:
-        decoder["RFMiD"] = Decoder_multi_classification(num_class=29)
-        decoder["RFMiD"].__name__ = "RFMiD"
-    if "TAOP" in data:
-        decoder["TAOP"] = Decoder_single_classification(num_class=5)
-        decoder["TAOP"].__name__ = "TAOP"
-    if "APTOS" in data:
-        decoder["APTOS"] = Decoder_single_classification(num_class=5)
-        decoder["APTOS"].__name__ = "APTOS"
-    if "Kaggle" in data:
-        decoder["Kaggle"] = Decoder_single_classification(num_class=5)
-        decoder["Kaggle"].__name__ = "Kaggle"
-    return decoder
-
-
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 def get_task_loss(data):
     loss = {}
     if "ODIR-5K" in data:
         weights = torch.tensor([2.2477, 3.8860, 21.4524, 22.2862, 24.7333, 35.8352, 26.0620, 5.5568]).cuda()
         loss["ODIR-5K"] = nn.BCELoss(weight=weights)
     if "RFMiD" in data:
-<<<<<<< HEAD
         weights = torch.tensor([1.264, 5.106, 19.2, 6.057, 13.913, 19.01, 26.301, 10.323, 137.143, 40.851, 128.0, 51.892, 6.809, 68.571, 320.0, 120.0, 29.538, 33.103, 384.0, 112.941, 174.545, 137.143, 44.651, 60.0, 128.0, 87.273, 174.545, 320.0, 56.471]).cuda()
         loss["RFMiD"] = nn.BCELoss()
     if "KaggleDR+" in data:
         loss["KaggleDR+"] = nn.BCELoss()
-=======
-        weights = torch.tensor([1.264, 5.106, 19.2, 6.057, 13.913, 19.01, 26.301, 10.323, 137.143, 40.851, 128.0, 51.892, 6.809, 68.571, 320.0,
-                               120.0, 29.538, 33.103, 384.0, 112.941, 174.545, 137.143, 44.651, 60.0, 128.0, 87.273, 174.545, 320.0, 56.471]).cuda()
-        loss["RFMiD"] = nn.BCELoss()
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     if "TAOP" in data:
         loss["TAOP"] = nn.CrossEntropyLoss()
     if "APTOS" in data:
         loss["APTOS"] = nn.CrossEntropyLoss()
     if "Kaggle" in data:
         loss["Kaggle"] = nn.CrossEntropyLoss()
-<<<<<<< HEAD
     return loss
-=======
-    return loss
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
