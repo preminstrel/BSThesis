@@ -134,3 +134,8 @@ class build_hard_param_share_model(nn.Module):
     def backward(self, loss = None):
         loss.backward()
         self.optimizer.step()
+
+class build_cross_stitch_model(nn.Module):
+    '''
+    build Cross Stitch multi-task model
+    '''

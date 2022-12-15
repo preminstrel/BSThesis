@@ -15,7 +15,7 @@ from utils.parser import ParserArgs
 from utils.model import save_checkpoint, resume_checkpoint
 
 from data.dataset import TrainDataset, ValidDataset
-from data.dataset import get_train_transforms, get_valid_transforms, get_valid_dataloader, get_train_data
+from data.dataset import get_train_transforms, get_valid_transforms, get_valid_dataloader, get_train_data, get_single_task_train_dataloader
 
 
 if __name__ == "__main__":
@@ -43,10 +43,7 @@ if __name__ == "__main__":
         valid_dataloaders = get_valid_dataloader(args, valid_transform)
     else:
         terminal_msg("Processing the dataset for single-task model", "E")
-        train_dataset = TrainDataset(args.data, transform=train_transfrom)
-        valid_dataset = ValidDataset(args.data, transform=valid_transform)
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
+        train_dataloader, valid_dataloader = get_single_task_train_dataloader(args, train_transfrom, valid_transform)
     terminal_msg('DataLoader ({}) is ready!'.format(args.data), 'C')
 
     if args.multi_task:

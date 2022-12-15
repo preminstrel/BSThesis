@@ -4,8 +4,10 @@
 
 # CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, KaggleDR+" --resume archive/checkpoints/Hard_Params/model_best.pth --project Hard-Params --multi_task --valid_freq 1 --epochs 400 --use_wandb --num_workers 8 > archive/logs/Hard_Params.log
 
-#python idea.py --data TAOP --batch_size 128 --save_freq 50 --valid_freq 1 --use_wandb --project TAOP #> TAOP.log &
+nohup python idea.py --data ODIR-5K --batch_size 128 --save_freq 50 --valid_freq 1 --use_wandb --project ODIR-5K > archive/logs/ODIR-5K/balanced.log &
 
-# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data Kaggle --batch_size 128 --save_freq 50 --valid_freq 1 --use_wandb --project Kaggle --lr 3e-4 > logs/Kaggle.log
+# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data Kaggle --batch_size 128 --save_freq 50 --valid_freq 1 --use_wandb --project Kaggle --lr 3e-4 > archive/logs/Kaggle/baseline_balanced.log
 
-nohup python idea.py --data KaggleDR+ --batch_size 128 --resume archive/checkpoints/KaggleDR+/model_best.pth --save_freq 50 --valid_freq 1 --use_wandb --project KaggleDR+ --lr 1e-4 > archive/logs/KaggleDR+.log
+#python idea.py --data KaggleDR+ --batch_size 128 --resume archive/checkpoints/KaggleDR+/baseline.pth --save_freq 50 --valid_freq 1 --project KaggleDR+ --lr 1e-4
+
+python idea.py --data ODIR-5K --batch_size 128 --save_freq 50 --valid_freq 1 --project ODIR-5K

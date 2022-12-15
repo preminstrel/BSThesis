@@ -158,10 +158,8 @@ def get_task_head(data):
 def get_task_loss(data):
     loss = {}
     if "ODIR-5K" in data:
-        weights = torch.tensor([2.2477, 3.8860, 21.4524, 22.2862, 24.7333, 35.8352, 26.0620, 5.5568]).cuda()
-        loss["ODIR-5K"] = nn.BCELoss(weight=weights)
+        loss["ODIR-5K"] = nn.BCELoss()
     if "RFMiD" in data:
-        weights = torch.tensor([1.264, 5.106, 19.2, 6.057, 13.913, 19.01, 26.301, 10.323, 137.143, 40.851, 128.0, 51.892, 6.809, 68.571, 320.0, 120.0, 29.538, 33.103, 384.0, 112.941, 174.545, 137.143, 44.651, 60.0, 128.0, 87.273, 174.545, 320.0, 56.471]).cuda()
         loss["RFMiD"] = nn.BCELoss()
     if "KaggleDR+" in data:
         loss["KaggleDR+"] = nn.BCELoss()

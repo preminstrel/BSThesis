@@ -11,6 +11,8 @@ from torch.utils.data import DataLoader
 from utils.info import terminal_msg
 from utils.image import RandomGaussianBlur, get_color_distortion
 
+from data.sampler import ImbalancedDatasetSampler, MultilabelBalancedRandomSampler
+
 def get_data_weights(args):
     num = {}
     data_dict = args.data.split(", ") # ['ODIR-5K', 'TAOP', 'RFMiD', ...]
@@ -36,7 +38,7 @@ def get_data_weights(args):
 
 def get_train_transforms(img_size):
     '''
-    resize(256)-> random crop -> random filp -> color distortion -> GaussianBlur -> normalize
+    resize (256)-> random crop (224) -> random filp -> color distortion -> GaussianBlur -> normalize
     '''
     transform = transforms.Compose([
         #transforms.Resize((256, 256)),
@@ -53,6 +55,9 @@ def get_train_transforms(img_size):
     return transform
 
 def get_valid_transforms(img_size):
+    '''
+    resize (224)-> normalize
+    '''
     transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
@@ -173,6 +178,21 @@ def get_batch(data):
         batch = next(data['iterloader'])
     return batch
 
+def get_single_task_train_dataloader(args, train_transfrom, valid_transform):
+    train_dataset = TrainDataset(args.data, transform=train_transfrom)
+    valid_dataset = ValidDataset(args.data, transform=valid_transform)
+
+    if args.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
+        sampler = MultilabelBalancedRandomSampler(train_dataset.get_labels())
+    elif args.data in ["TAOP", "APTOS", "Kaggle"]:
+        sampler = ImbalancedDatasetSampler(train_dataset)
+
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler)
+    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
+
+    return train_dataloader, valid_dataloader
+
+
 class TrainDataset(data.Dataset):
     """ 
     Based on the args.data to choose the dataset for training:
@@ -261,6 +281,9 @@ class TrainDataset(data.Dataset):
     def __len__(self):
        return len(self.landmarks_frame)
 
+    def get_labels(self):
+        return self.landmarks_frame.iloc[:,1:]
+
 class ValidDataset(data.Dataset):
     """ 
     Based on the args.data to choose the dataset for validation:
@@ -292,7 +315,7 @@ class ValidDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'Kaggle':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/Kaggle/'
-            self.landmarks_frame = pd.read_csv(self.data_root + 'label_test.csv')
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'KaggleDR+':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
