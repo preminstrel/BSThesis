@@ -20,13 +20,8 @@ from utils.metrics import Multi_AUC_and_Kappa, multi_label_metrics, single_label
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-<<<<<<< HEAD
     #np.random.seed(seed)
     #random.seed(seed)
-=======
-    # np.random.seed(seed)
-    # random.seed(seed)
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
@@ -70,11 +65,7 @@ class Single_Task_Trainer(object):
             for i, sample in enumerate(self.train_dataloader):
                 img = sample['image']
                 gt = sample['landmarks']
-<<<<<<< HEAD
                 img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
-=======
-                img, gt = img.to(self.device), gt.to(self.device)
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 
                 pred, loss = self.model.process(img, gt)
                 self.model.backward(loss)
@@ -133,28 +124,17 @@ class Single_Task_Trainer(object):
                 gt_list.extend(gt)
             pred_list = np.array(pred_list, dtype=np.float32)
             gt_list = np.array(gt_list, dtype=np.float32)
-<<<<<<< HEAD
             
         if self.args.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
-=======
-
-        if self.args.data in ["ODIR-5K", "RFMiD"]:
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
             result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
             auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
             print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
             if self.args.use_wandb:
                 wandb.log({"AUC": auc,
                            "Kappa": kappa,
-<<<<<<< HEAD
                            "F1 Score": result['micro/f1'],})
                         # "Macro F1 Score": result['macro/f1'],
                         #"Samples F1 Score": result['samples/f1'],})
-=======
-                           "F1 Score": result['micro/f1'], })
-                # "Macro F1 Score": result['macro/f1'],
-                # "Samples F1 Score": result['samples/f1'],})
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
             acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
 
         elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
@@ -163,14 +143,9 @@ class Single_Task_Trainer(object):
 
             if self.args.use_wandb:
                 wandb.log({"Micro F1 Score": result['micro/f1'],
-<<<<<<< HEAD
                         "Macro F1 Score": result['macro/f1'],})
             acc = np.mean([result['micro/f1'], result['macro/f1']])
         
-=======
-                           "Macro F1 Score": result['macro/f1'], })
-            acc = np.mean([result['micro/f1'], result['macro/f1']])
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 
         terminal_msg("Validation finished!", "C")
         return acc
@@ -209,11 +184,7 @@ class Multi_Task_Trainer(object):
         prev_time = time.time()
         terminal_msg(f"Params in {type(self.model).__name__}: {self.model.num_params / 1e6:.4f}M ({self.model.num_trainable_params / 1e6:.4f}M trainable). "+"Start training...", 'E')
 
-<<<<<<< HEAD
         data_dict = self.args.data.split(", ") # ['ODIR-5K', 'TAOP', 'RFMiD']
-=======
-        data_dict = self.args.data.split(", ")  # ['ODIR-5K', 'TAOP', 'RFMiD']
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
         weights = get_data_weights(self.args)
 
         for epoch in range(self.start_epoch, self.epochs + 1):
@@ -224,19 +195,11 @@ class Multi_Task_Trainer(object):
                 roll = random.choices(data_dict)[0]
                 data = self.train_data[roll]
                 #print("\rSelect dataset {} in this batch".format(roll))
-<<<<<<< HEAD
                 
                 sample = get_batch(data = data)
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
-=======
-
-                sample = get_batch(data=data)
-                img = sample['image']
-                gt = sample['landmarks']
-                img, gt = img.to(self.device), gt.to(self.device)
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 
                 pred, loss = self.model.process(img, gt, roll)
                 self.model.backward(loss)
@@ -244,11 +207,7 @@ class Multi_Task_Trainer(object):
                 # Determine approximate time left
                 batch_done = epoch * self.batches + batch
                 batches_left = self.epochs * self.batches - batch_done
-<<<<<<< HEAD
                 time_left = datetime.timedelta(seconds = batches_left * (time.time() - prev_time))
-=======
-                time_left = datetime.timedelta(seconds=batches_left * (time.time() - prev_time))
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
                 prev_time = time.time()
 
                 # Print log
@@ -309,27 +268,16 @@ class Multi_Task_Trainer(object):
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
 
-<<<<<<< HEAD
             if valid_dataloader_name in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
-=======
-            if valid_dataloader_name in ["ODIR-5K", "RFMiD"]:
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
                 result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
                 auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
                 print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
                 if self.args.use_wandb:
                     wandb.log({"AUC ({})".format(valid_dataloader_name): auc,
-<<<<<<< HEAD
                             "Kappa ({})".format(valid_dataloader_name): kappa,
                             "F1 Score ({})".format(valid_dataloader_name): result['micro/f1'],})
                             # "Macro F1 Score": result['macro/f1'],
                             #"Samples F1 Score": result['samples/f1'],})
-=======
-                               "Kappa ({})".format(valid_dataloader_name): kappa,
-                               "F1 Score ({})".format(valid_dataloader_name): result['micro/f1'], })
-                    # "Macro F1 Score": result['macro/f1'],
-                    # "Samples F1 Score": result['samples/f1'],})
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
                 acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
                 all_acc.append(acc)
 
@@ -338,21 +286,12 @@ class Multi_Task_Trainer(object):
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
                 if self.args.use_wandb:
-<<<<<<< HEAD
                     wandb.log({"Accuracy ({})".format(valid_dataloader_name): result['micro/f1'],})
                             #"Macro F1 Score ({})".format(valid_dataloader_name): result['macro/f1'],})
-=======
-                    wandb.log({"Accuracy ({})".format(valid_dataloader_name): result['micro/f1'], })
-                    # "Macro F1 Score ({})".format(valid_dataloader_name): result['macro/f1'],})
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
                 acc = np.mean([result['micro/f1'], result['macro/f1']])
                 all_acc.append(acc)
 
         precision = np.array(all_acc).mean()
         terminal_msg("Validation finished!", "C")
 
-<<<<<<< HEAD
         return precision
-=======
-        return precision
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
