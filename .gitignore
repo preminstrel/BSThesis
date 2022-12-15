@@ -1,17 +1,9 @@
-<<<<<<< HEAD
-=======
-utils/__pycache__/
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
 .DS_Store
 .vscode/
 .ipynb_checkpoints/
 archive/
 models/__pycache__/
 engine/__pycache__/
-<<<<<<< HEAD
 data/__pycache__/
 utils/__pycache__/
 wandb/
-=======
-data/__pycache__/
->>>>>>> 2f4b83349a47023660c13023fcf673789a76e64a
