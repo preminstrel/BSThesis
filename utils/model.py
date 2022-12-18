@@ -36,7 +36,7 @@ def save_checkpoint(self, epoch, save_best=False):
         #'optimizer': optimizer.state_dict(),
     }
     if self.args.multi_task:
-        if self.args.method == "HPS":
+        if self.args.method == "HPS" or "MTAN":
             for name, layer in self.model.named_children():
                 if name == "encoder":
                     continue

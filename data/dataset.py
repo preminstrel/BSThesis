@@ -350,7 +350,7 @@ class ValidDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'Kaggle':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/Kaggle/'
-            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_test.csv')
         elif self.data == 'DR+':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')

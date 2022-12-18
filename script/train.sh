@@ -21,8 +21,14 @@ python main.py
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MMoE --use_wandb --batch_size 12 --batches 2000 > archive/logs/MMoE/unified.log & 
 
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MMoE --use_wandb --batch_size 10 --batches 2000 > archive/logs/MMoE/unified.log & 
+nohup python idea.py --data "TAOP" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MMoE --use_wandb --batch_size 10 --batches 2000 > archive/logs/MMoE/unified.log & 
 
 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project Hard-Params --balanced_sampling --method HPS --multi_task --valid_freq 1 --epochs 400 --use_wandb --num_workers 8 > archive/logs/Hard_Params/balanced.log
 
 python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project CGC --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method CGC --batch_size 4 --batches 2000
+
+nohup python idea.py --data TAOP --batch_size 128 --save_freq 500 --valid_freq 1 --multi_gpus --use_wandb --project TAOP > logs/TAOP/baseline.log &
+
+python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MTAN --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MTAN --batch_size 4 --batches 2000
+
+nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MTAN --multi_task --valid_freq 1 --lr 1e-4 --epochs 400 --method MTAN --batch_size 128 --batches 200 --use_wandb --num_workers 8 > archive/logs/MTAN/unified.log &

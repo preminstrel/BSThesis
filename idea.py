@@ -3,8 +3,9 @@ import torch
 import wandb
 from torchsummary import summary
 import warnings
+import os
 
-from models.build import build_single_task_model, build_hard_param_share_model, build_MMoE_model, build_CGC_model
+from models.build import build_single_task_model, build_hard_param_share_model, build_MMoE_model, build_CGC_model, build_MTAN_model
 
 from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
@@ -22,6 +23,7 @@ if __name__ == "__main__":
     args = ParserArgs().get_args()
     setup_seed(122500)
     device = get_device()
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
     if args.multi_task:
         if args.method == "HPS":
@@ -30,11 +32,16 @@ if __name__ == "__main__":
             model = build_MMoE_model(args)
         elif args.method == "CGC":
             model = build_CGC_model(args)
+        elif args.method == "MTAN":
+            model = build_MTAN_model(args)
         else:
             terminal_msg(f"Wrong mothod {args.method}", "F")
     else:
         model = build_single_task_model(args)
     torch.backends.cudnn.benchmark = True
+    
+    if args.multi_gpus:
+        model = torch.nn.DataParallel(model)
 
     if args.use_wandb:
         wandb.init(project= args.project)

@@ -20,8 +20,6 @@ class Single_Task_Evaluation(object):
         self.device = device
 
         model = model.to(self.device)
-        if len(self.args.device_ids) > 1:
-            model = torch.nn.DataParallel(model, device_ids=self.args.device_ids)
 
         self.valid_dataloader = valid_dataloader
         self.batch_size = self.args.batch_size
@@ -83,8 +81,6 @@ class Multi_Task_Evaluation(object):
         self.device = device
 
         model = model.to(self.device)
-        if len(self.args.device_ids) > 1:
-            model = torch.nn.DataParallel(model, device_ids=self.args.device_ids)
 
         self.valid_dataloaders = valid_dataloaders
         self.batch_size = self.args.batch_size

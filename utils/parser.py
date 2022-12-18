@@ -24,7 +24,7 @@ class ParserArgs(object):
         self.parser.add_argument("--resume", type=str, default="", metavar="PATH", help="path to checkpoints")
         self.parser.add_argument("--save_freq", type=int, default=50, help="save frequency")
         self.parser.add_argument("--valid_freq", type=int, default=1, help="validation frequency")
-        self.parser.add_argument("--device_ids", type=list, default=[0], help="device ids")
+        self.parser.add_argument("--multi_gpus", action="store_true", help="enable DataParallel")
 
         # eval settings
         self.parser.add_argument("--use_wandb", action="store_true", help="enable wandb")

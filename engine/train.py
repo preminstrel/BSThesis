@@ -7,6 +7,8 @@ import numpy as np
 import random
 from sklearn.metrics import precision_score, recall_score, f1_score
 from termcolor import colored
+from torch.nn import DataParallel
+import os
 
 from data.dataset import get_data_weights, get_batch
 
@@ -31,9 +33,6 @@ class Single_Task_Trainer(object):
         self.device = device
 
         model = model.to(self.device)
-        if len(self.args.device_ids) > 1:
-            model = torch.nn.DataParallel(model, device_ids=self.args.device_ids)
-
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
 
@@ -65,8 +64,12 @@ class Single_Task_Trainer(object):
                 gt = sample['landmarks']
                 img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
 
-                pred, loss = self.model.process(img, gt)
-                self.model.backward(loss)
+                if self.args.multi_gpus:
+                    pred, loss = self.model.module.process(img, gt)
+                    self.model.module.backward(loss)
+                else:
+                    pred, loss = self.model.process(img, gt)
+                    self.model.backward(loss)
 
                 # Determine approximate time left
                 batches_done = epoch * self.train_dataloader.__len__() + i
@@ -111,7 +114,10 @@ class Single_Task_Trainer(object):
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device), gt.to(self.device)
-                pred, _ = self.model.process(img, gt)
+                if self.args.multi_gpus:
+                    pred, _ = self.model.module.process(img, gt)
+                else:
+                    pred, _ = self.model.process(img, gt)
                 pred = pred.cpu().tolist()
                 gt = gt.cpu().tolist()
                 if self.args.data in ["TAOP"]:
@@ -156,8 +162,6 @@ class Multi_Task_Trainer(object):
         self.device = device
 
         model = model.to(self.device)
-        if len(self.args.device_ids) > 1:
-            model = torch.nn.DataParallel(model, device_ids=self.args.device_ids)
 
         self.train_data = train_data
         self.valid_dataloaders = valid_dataloaders
@@ -172,7 +176,7 @@ class Multi_Task_Trainer(object):
         else:
             self.start_epoch = 1
 
-        #self.validate()
+        self.validate()
 
         self.train()
 
