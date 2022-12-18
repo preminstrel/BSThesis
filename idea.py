@@ -3,9 +3,8 @@ import torch
 import wandb
 from torchsummary import summary
 import warnings
-import random
 
-from models.build import build_single_task_model, build_hard_param_share_model
+from models.build import build_single_task_model, build_hard_param_share_model, build_MMoE_model, build_CGC_model
 
 from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
@@ -14,7 +13,6 @@ from utils.info import terminal_msg, epic_start, get_device
 from utils.parser import ParserArgs
 from utils.model import save_checkpoint, resume_checkpoint
 
-from data.dataset import TrainDataset, ValidDataset
 from data.dataset import get_train_transforms, get_valid_transforms, get_valid_dataloader, get_train_data, get_single_task_train_dataloader
 
 
@@ -26,7 +24,14 @@ if __name__ == "__main__":
     device = get_device()
 
     if args.multi_task:
-        model = build_hard_param_share_model(args)
+        if args.method == "HPS":
+            model = build_hard_param_share_model(args)
+        elif args.method == "MMoE":
+            model = build_MMoE_model(args)
+        elif args.method == "CGC":
+            model = build_CGC_model(args)
+        else:
+            terminal_msg(f"Wrong mothod {args.method}", "F")
     else:
         model = build_single_task_model(args)
     torch.backends.cudnn.benchmark = True
@@ -34,8 +39,8 @@ if __name__ == "__main__":
     if args.use_wandb:
         wandb.init(project= args.project)
 
-    train_transfrom = get_train_transforms(256)
-    valid_transform = get_valid_transforms(256)
+    train_transfrom = get_train_transforms(224)
+    valid_transform = get_valid_transforms(224)
 
     if args.multi_task:
         terminal_msg("Processing the datasets for multi-task model", "E")

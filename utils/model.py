@@ -36,10 +36,21 @@ def save_checkpoint(self, epoch, save_best=False):
         #'optimizer': optimizer.state_dict(),
     }
     if self.args.multi_task:
-        for name, layer in self.model.named_children():
-            if name == "encoder":
-                continue
-            state[name] = self.model.decoder[name].state_dict()
+        if self.args.method == "HPS":
+            for name, layer in self.model.named_children():
+                if name == "encoder":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
+
+        elif self.args.method == "MMoE":
+            state["gate_specific"] = self.model.gate_specific.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "encoder" or "gate_specific":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
+        else:
+            terminal_msg(f"Wrong method: {self.args.method}", "F")
+
     else:
         state["decoder"] = self.model.decoder.state_dict()
 

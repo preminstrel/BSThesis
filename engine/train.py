@@ -1,7 +1,5 @@
 import time
 import datetime
-from tkinter.tix import Select
-from wsgiref import validate
 import wandb
 import sys
 import torch
@@ -125,7 +123,7 @@ class Single_Task_Trainer(object):
             pred_list = np.array(pred_list, dtype=np.float32)
             gt_list = np.array(gt_list, dtype=np.float32)
             
-        if self.args.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
+        if self.args.data in ["ODIR-5K", "RFMiD", "DR+"]:
             result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
             auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
             print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
@@ -174,7 +172,7 @@ class Multi_Task_Trainer(object):
         else:
             self.start_epoch = 1
 
-        self.validate()
+        #self.validate()
 
         self.train()
 
@@ -185,7 +183,6 @@ class Multi_Task_Trainer(object):
         terminal_msg(f"Params in {type(self.model).__name__}: {self.model.num_params / 1e6:.4f}M ({self.model.num_trainable_params / 1e6:.4f}M trainable). "+"Start training...", 'E')
 
         data_dict = self.args.data.split(", ") # ['ODIR-5K', 'TAOP', 'RFMiD']
-        weights = get_data_weights(self.args)
 
         for epoch in range(self.start_epoch, self.epochs + 1):
             self.model.train()
@@ -268,14 +265,18 @@ class Multi_Task_Trainer(object):
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
 
-            if valid_dataloader_name in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
+            if valid_dataloader_name in ["ODIR-5K", "RFMiD", "DR+"]:
                 result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
-                auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
-                print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
+                auc, kappa, flatten_auc, flatten_kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
+                print(colored("AUC: ", "red") + str(flatten_auc) + colored(", Kappa: ", "red") + str(flatten_kappa))
+                print(colored("Avg AUC: ", "red") + str(auc) + colored(", Avg Kappa: ", "red") + str(kappa))
+                
                 if self.args.use_wandb:
-                    wandb.log({"AUC ({})".format(valid_dataloader_name): auc,
-                            "Kappa ({})".format(valid_dataloader_name): kappa,
-                            "F1 Score ({})".format(valid_dataloader_name): result['micro/f1'],})
+                    wandb.log({"Avg AUC ({})".format(valid_dataloader_name): auc,
+                            "Avg Kappa ({})".format(valid_dataloader_name): kappa,
+                            "AUC ({})".format(valid_dataloader_name): flatten_auc,
+                            "Kappa ({})".format(valid_dataloader_name): flatten_kappa,})
+                            #"F1 Score ({})".format(valid_dataloader_name): result['micro/f1'],})
                             # "Macro F1 Score": result['macro/f1'],
                             #"Samples F1 Score": result['samples/f1'],})
                 acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
@@ -288,7 +289,7 @@ class Multi_Task_Trainer(object):
                 if self.args.use_wandb:
                     wandb.log({"Accuracy ({})".format(valid_dataloader_name): result['micro/f1'],})
                             #"Macro F1 Score ({})".format(valid_dataloader_name): result['macro/f1'],})
-                acc = np.mean([result['micro/f1'], result['macro/f1']])
+                acc = np.mean([result['micro/f1']])
                 all_acc.append(acc)
 
         precision = np.array(all_acc).mean()

@@ -28,8 +28,8 @@ def get_data_weights(args):
         num['APTOS'] = 3295
     if 'Kaggle' in args.data:
         num['Kaggle'] = 35126
-    if 'KaggleDR+' in args.data:
-        num['KaggleDR+'] = 51491
+    if 'DR+' in args.data:
+        num['DR+'] = 51491
     for i in data_dict:
         weights.append(10000/num[i])
     weights = np.array(weights, dtype=np.float32)
@@ -77,8 +77,8 @@ def get_train_datasets(args, transform):
         datasets["APTOS"] = TrainDataset('APTOS', transform)
     if "Kaggle" in args.data:
         datasets["Kaggle"] = TrainDataset('Kaggle', transform)
-    if "KaggleDR+" in args.data:
-        datasets["KaggleDR+"] = TrainDataset('KaggleDR+', transform)
+    if "DR+" in args.data:
+        datasets["DR+"] = TrainDataset('DR+', transform)
     else:
         terminal_msg("Args.Data Error (From get_train_datasets)", "F")
         exit()
@@ -96,8 +96,8 @@ def get_valid_datasets(args, transform):
         datasets["APTOS"] = ValidDataset('APTOS', transform)
     if "Kaggle" in args.data:
         datasets["Kaggle"] = ValidDataset('Kaggle', transform)
-    if "KaggleDR+" in args.data:
-        datasets["KaggleDR+"] = ValidDataset('KaggleDR+', transform)
+    if "DR+" in args.data:
+        datasets["DR+"] = ValidDataset('DR+', transform)
     else:
         terminal_msg("Args.Data Error (From get_valid_datasets)", "F")
         exit()
@@ -115,8 +115,8 @@ def get_train_dataloader(args, transform):
         dataloaders["APTOS"] = DataLoader(TrainDataset('APTOS', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "Kaggle" in args.data:
         dataloaders["Kaggle"] = DataLoader(TrainDataset('Kaggle', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
-    if "KaggleDR+" in args.data:
-        dataloaders["KaggleDR+"] = DataLoader(TrainDataset('KaggleDR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "DR+" in args.data:
+        dataloaders["DR+"] = DataLoader(TrainDataset('DR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     else:
         terminal_msg("Args.Data Error (From get_train_dataloder)", "F")
         exit()
@@ -134,8 +134,8 @@ def get_valid_dataloader(args, transform):
         dataloaders["APTOS"] = DataLoader(ValidDataset('APTOS', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "Kaggle" in args.data:
         dataloaders["Kaggle"] = DataLoader(ValidDataset('Kaggle', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
-    if "KaggleDR+" in args.data:
-        dataloaders["KaggleDR+"] = DataLoader(ValidDataset('KaggleDR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "DR+" in args.data:
+        dataloaders["DR+"] = DataLoader(ValidDataset('DR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     assert dataloaders
     return dataloaders
 
@@ -144,28 +144,58 @@ def get_train_data(args, transform):
 
     if 'ODIR-5K' in args.data:
         data['ODIR-5K'] = {}
-        data['ODIR-5K']['dataloader'] = DataLoader(TrainDataset('ODIR-5K', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        train_dataset = TrainDataset('ODIR-5K', transform)
+        if args.balanced_sampling:
+            data['ODIR-5K']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=MultilabelBalancedRandomSampler(train_dataset.get_labels()), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['ODIR-5K']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
         data['ODIR-5K']['iterloader'] = iter(data['ODIR-5K']['dataloader'])
+    
     if 'RFMiD' in args.data:
         data['RFMiD'] = {}
-        data['RFMiD']['dataloader'] = DataLoader(TrainDataset('RFMiD', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        train_dataset = TrainDataset('RFMiD', transform)
+        if args.balanced_sampling:
+            data['RFMiD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=MultilabelBalancedRandomSampler(train_dataset.get_labels()), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['RFMiD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
         data['RFMiD']['iterloader'] = iter(data['RFMiD']['dataloader'])
+    
+    if 'DR+' in args.data:
+        data['DR+'] = {}
+        data['DR+'] = {}
+        train_dataset = TrainDataset('DR+', transform)
+        if args.balanced_sampling:
+            data['DR+']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=MultilabelBalancedRandomSampler(train_dataset.get_labels()), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['DR+']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['DR+']['iterloader'] = iter(data['DR+']['dataloader'])
+    
     if 'TAOP' in args.data:
         data['TAOP'] = {}
-        data['TAOP']['dataloader'] = DataLoader(TrainDataset('TAOP', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        train_dataset = TrainDataset('TAOP', transform)
+        if args.balanced_sampling:
+            data['TAOP']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['TAOP']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
         data['TAOP']['iterloader'] = iter(data['TAOP']['dataloader'])
+    
     if 'APTOS' in args.data:
         data['APTOS'] = {}
-        data['APTOS']['dataloader'] = DataLoader(TrainDataset('APTOS', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        train_dataset = TrainDataset('APTOS', transform)
+        if args.balanced_sampling:
+            data['APTOS']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['APTOS']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
         data['APTOS']['iterloader'] = iter(data['APTOS']['dataloader'])
+    
     if 'Kaggle' in args.data:
         data['Kaggle'] = {}
-        data['Kaggle']['dataloader'] = DataLoader(TrainDataset('Kaggle', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        train_dataset = TrainDataset('Kaggle', transform)
+        if args.balanced_sampling:
+            data['Kaggle']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['Kaggle']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
         data['Kaggle']['iterloader'] = iter(data['Kaggle']['dataloader'])
-    if 'KaggleDR+' in args.data:
-        data['KaggleDR+'] = {}
-        data['KaggleDR+']['dataloader'] = DataLoader(TrainDataset('KaggleDR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
-        data['KaggleDR+']['iterloader'] = iter(data['KaggleDR+']['dataloader'])
     
     assert data
     return data
@@ -182,16 +212,21 @@ def get_single_task_train_dataloader(args, train_transfrom, valid_transform):
     train_dataset = TrainDataset(args.data, transform=train_transfrom)
     valid_dataset = ValidDataset(args.data, transform=valid_transform)
 
-    if args.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
-        sampler = MultilabelBalancedRandomSampler(train_dataset.get_labels())
-    elif args.data in ["TAOP", "APTOS", "Kaggle"]:
-        sampler = ImbalancedDatasetSampler(train_dataset)
+    if args.balanced_sampling:
+        if args.data in ["ODIR-5K", "RFMiD", "DR+"]:
+            sampler = MultilabelBalancedRandomSampler(train_dataset.get_labels())
+        elif args.data in ["TAOP", "APTOS", "Kaggle"]:
+            sampler = ImbalancedDatasetSampler(train_dataset)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler)
+    else:
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler)
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
 
     return train_dataloader, valid_dataloader
 
+
+#=====================Datasets=========================#
 
 class TrainDataset(data.Dataset):
     """ 
@@ -199,7 +234,7 @@ class TrainDataset(data.Dataset):
 
     ODIR-5K: 6,307 samples
     RFMiD: 1,920 samples
-    KaggleDR+: 51,491 samples
+    DR+: 51,491 samples
 
     TAOP: 3,000 samples
     APTOS: 3,295 samples
@@ -225,7 +260,7 @@ class TrainDataset(data.Dataset):
         elif self.data == 'Kaggle':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/Kaggle/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'trainLabels.csv')
-        elif self.data == 'KaggleDR+':
+        elif self.data == 'DR+':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
         else:
@@ -252,14 +287,14 @@ class TrainDataset(data.Dataset):
             img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'Kaggle':
             img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
-        elif self.data == 'KaggleDR+':
+        elif self.data == 'DR+':
             index = str(self.landmarks_frame.iloc[idx, 0])
             if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
                 img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
             elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
                 img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
             else:
-                print('Cannot find img path (KaggleDR+)')
+                print('Cannot find img path (DR+)')
                 exit()
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
@@ -268,7 +303,7 @@ class TrainDataset(data.Dataset):
         img = self.load_image(img_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
 
-        if self.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
+        if self.data in ["ODIR-5K", "RFMiD", "DR+"]:
             sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
         elif self.data in ["TAOP", "APTOS", "Kaggle"]:
             sample = {'image': img, 'landmarks': torch.tensor(landmarks).int()}
@@ -316,7 +351,7 @@ class ValidDataset(data.Dataset):
         elif self.data == 'Kaggle':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/Kaggle/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
-        elif self.data == 'KaggleDR+':
+        elif self.data == 'DR+':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         else:
@@ -343,14 +378,14 @@ class ValidDataset(data.Dataset):
             img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'Kaggle':
             img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
-        elif self.data == 'KaggleDR+':
+        elif self.data == 'DR+':
             index = str(self.landmarks_frame.iloc[idx, 0])
             if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
                 img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
             elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
                 img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
             else:
-                print('Cannot find img path (KaggleDR+)')
+                print('Cannot find img path (DR+)')
                 exit()
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__getitem__)", "F")

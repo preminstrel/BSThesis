@@ -4,9 +4,11 @@ from .encoder_decoder import Encoder, Decoder_multi_classification, Decoder_sing
 from .encoder_decoder import get_task_head, get_task_loss
 import torch.nn as nn
 import torch
+import numpy as np
 
 from utils.info import terminal_msg, get_device
 from utils.model import count_parameters
+from models.resnet import resnet50
 
 class build_single_task_model(nn.Module):
     '''
@@ -31,17 +33,16 @@ class build_single_task_model(nn.Module):
         elif args.data == "Kaggle":
             self.decoder = Decoder_single_classification(num_class = 5)
             type(self).__name__ = "Kaggle"
-        elif args.data == "KaggleDR+":
+        elif args.data == "DR+":
             self.decoder = Decoder_multi_classification(num_class = 28)
-            type(self).__name__ = "KaggleDR+"
+            type(self).__name__ = "DR+"
         else:
             terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
             exit()
 
-        weights = torch.tensor([2.2477, 3.8860, 21.4524, 22.2862, 24.7333, 35.8352, 26.0620, 5.5568])
-        self.ODIR_5K_bce_loss = nn.BCELoss(weight = weights)
 
-        weights = torch.tensor([1.264, 5.106, 19.2, 6.057, 13.913, 19.01, 26.301, 10.323, 137.143, 40.851, 128.0, 51.892, 6.809, 68.571, 320.0, 120.0, 29.538, 33.103, 384.0, 112.941, 174.545, 137.143, 44.651, 60.0, 128.0, 87.273, 174.545, 320.0, 56.471])
+        self.ODIR_5K_bce_loss = nn.BCELoss()
+
         self.RFMiD_bce_loss = nn.BCELoss()
 
         self.KaggleDR_bce_loss = nn.BCELoss()
@@ -63,7 +64,7 @@ class build_single_task_model(nn.Module):
             loss = self.ODIR_5K_bce_loss(pred, gt)
         elif self.args.data == "RFMiD":
             loss = self.RFMiD_bce_loss(pred, gt)
-        elif self.args.data == "KaggleDR+":
+        elif self.args.data == "DR+":
             loss = self.KaggleDR_bce_loss(pred, gt)
         elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
             gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
@@ -77,7 +78,6 @@ class build_single_task_model(nn.Module):
     def backward(self, loss = None):
         loss.backward()
         self.optimizer.step()
-
 
 class build_hard_param_share_model(nn.Module):
     '''
@@ -135,7 +135,211 @@ class build_hard_param_share_model(nn.Module):
         loss.backward()
         self.optimizer.step()
 
-class build_cross_stitch_model(nn.Module):
+class build_MMoE_model(nn.Module):
     '''
-    build Cross Stitch multi-task model
+    build MMoE multi-task model
     '''
+    def __init__(self, args):
+        super(build_MMoE_model, self).__init__()
+        type(self).__name__ = "MMoE"
+        self.args = args
+        self.task_name = args.data.split(", ")
+        self.rep_grad = True
+
+        if self.rep_grad:
+            self.rep_tasks = {}
+            self.rep = {}
+
+        self.decoder = get_task_head(args.data)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+
+        self.input_size = np.array(3*224*224, dtype=int).prod()
+        self.num_experts = 3 # num of shared experts
+        self.encoder = nn.ModuleList([resnet50(pretrained=True) for _ in range(self.num_experts)])
+        self.gate_specific = nn.ModuleDict({task: nn.Sequential(nn.Linear(self.input_size, self.num_experts),
+                                                                nn.Softmax(dim=-1)) for task in self.task_name})
+
+        self.encoder.to(device)
+        self.gate_specific.to(device)
+        num_params, num_trainable_params = count_parameters(self.encoder)
+        gate_num_params, gate_num_trainable_params = count_parameters(self.gate_specific)
+
+        num_params = num_params + gate_num_params
+        num_trainable_params = num_trainable_params + gate_num_trainable_params
+
+        decoder_params = []
+        gate_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            gate_params += list(self.gate_specific[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + gate_params + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+
+        self.add_module("encoder", self.encoder)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, img, head):
+        experts_shared_rep = torch.stack([e(img) for e in self.encoder]) # [3, batch, 2048, 7, 7]
+        selector = self.gate_specific[head](torch.flatten(img, start_dim=1)) # [batch, 3]
+        gate_rep = torch.einsum('ij..., ji -> j...', experts_shared_rep, selector) # [batch, 2048, 7, 7]
+        gate_rep = self._prepare_rep(gate_rep, head, same_rep=False) # [batch, 2048, 7, 7]
+        pred = self.decoder[head](gate_rep) 
+        return gate_rep, pred
+
+    def process(self, img, gt, head):
+        representation, pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle"]:
+            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None):
+        loss.backward()
+        self.optimizer.step()
+
+    def get_share_params(self):
+        r"""Return the shared parameters of the model.
+        """
+        return self.encoder.parameters()
+
+    def zero_grad_share_params(self):
+        r"""Set gradients of the shared parameters to zero.
+        """
+        self.encoder.zero_grad()
+        
+    def _prepare_rep(self, rep, task, same_rep=None):
+        if self.rep_grad:
+            if not same_rep:
+                self.rep[task] = rep
+            else:
+                self.rep = rep
+            self.rep_tasks[task] = rep.detach().clone()
+            self.rep_tasks[task].requires_grad = True
+            return self.rep_tasks[task]
+        else:
+            return rep
+
+class build_CGC_model(nn.Module):
+    '''
+    build CGC multi-task model
+    '''
+    def __init__(self, args):
+        super(build_CGC_model, self).__init__()
+        type(self).__name__ = "CGC"
+        
+        self.args = args
+        self.task_name = args.data.split(", ")
+        self.rep_grad = True
+
+        if self.rep_grad:
+            self.rep_tasks = {}
+            self.rep = {}
+
+        self.decoder = get_task_head(args.data)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+        self.input_size = np.array(3*224*224, dtype=int).prod()
+
+        args_num_experts = [1 for i in range(len(self.task_name) + 1)] # experts = 1
+        self.num_experts = {task: args_num_experts[tn+1] for tn, task in enumerate(self.task_name)}
+        self.num_experts['share'] = args_num_experts[0]
+        
+        self.experts_shared = nn.ModuleList([resnet50(pretrained=True) for _ in range(self.num_experts['share'])])
+        self.experts_specific = nn.ModuleDict({task: nn.ModuleList([resnet50(pretrained=True) for _ in range(self.num_experts[task])]) for task in self.task_name})
+        self.gate_specific = nn.ModuleDict({task: nn.Sequential(nn.Linear(self.input_size, 
+                                                                            self.num_experts['share']+self.num_experts[task]),
+                                                                nn.Softmax(dim=-1)) for task in self.task_name})
+
+
+        self.experts_specific.to(device)
+        self.gate_specific.to(device)
+        num_params, num_trainable_params = count_parameters(self.experts_specific)
+        gate_num_params, gate_num_trainable_params = count_parameters(self.gate_specific)
+        shared_num_params, shared_num_trainable_params = count_parameters(self.experts_shared)
+
+        num_params = num_params + gate_num_params + shared_num_params
+        num_trainable_params = num_trainable_params + gate_num_trainable_params + shared_num_trainable_params
+
+        decoder_params = []
+        gate_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            gate_params += list(self.gate_specific[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.experts_specific.parameters()) + gate_params + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+
+        self.add_module("experts_specific", self.experts_specific)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, img, head):
+        experts_shared_rep = torch.stack([e(img) for e in self.experts_shared]) # [share_exp, batch, 2048, 7, 7]
+        experts_specific_rep = torch.stack([e(img) for e in self.experts_specific[head]]) # [specific_exp, batch, 2048, 7, 7]
+        selector = self.gate_specific[head](torch.flatten(img, start_dim=1)) # [batch, share + specific]
+        gate_rep = torch.einsum('ij..., ji -> j...', torch.cat([experts_shared_rep, experts_specific_rep], dim=0), selector) # [batch, 2048, 7, 7]
+        gate_rep = self._prepare_rep(gate_rep, head, same_rep=False) # [batch, 2048, 7, 7]
+        pred = self.decoder[head](gate_rep) 
+        return gate_rep, pred
+
+    def process(self, img, gt, head):
+        representation, pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle"]:
+            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None):
+        loss.backward()
+        self.optimizer.step()
+
+    def get_share_params(self):
+        r"""Return the shared parameters of the model.
+        """
+        return self.encoder.parameters()
+
+    def zero_grad_share_params(self):
+        r"""Set gradients of the shared parameters to zero.
+        """
+        self.encoder.zero_grad()
+        
+    def _prepare_rep(self, rep, task, same_rep=None):
+        if self.rep_grad:
+            if not same_rep:
+                self.rep[task] = rep
+            else:
+                self.rep = rep
+            self.rep_tasks[task] = rep.detach().clone()
+            self.rep_tasks[task].requires_grad = True
+            return self.rep_tasks[task]
+        else:
+            return rep

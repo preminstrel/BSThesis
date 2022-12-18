@@ -83,7 +83,7 @@ class Bottleneck(nn.Module):
 
 class Encoder(nn.Module):
     '''
-    ResNet-50 backbone: [B, 3, 256, 256] --> [B, 2048, 8, 8]
+    ResNet-50 backbone: [B, 3, 224, 224] --> [B, 2048, 7, 7]
     '''
     def __init__(self):
         super().__init__()
@@ -141,9 +141,9 @@ def get_task_head(data):
     if "RFMiD" in data:
         decoder["RFMiD"] = Decoder_multi_classification(num_class = 29)
         decoder["RFMiD"].__name__ = "RFMiD"
-    if "KaggleDR+" in data:
-        decoder["KaggleDR+"] = Decoder_multi_classification(num_class = 28)
-        decoder["KaggleDR+"].__name__ = "KaggleDR+"
+    if "DR+" in data:
+        decoder["DR+"] = Decoder_multi_classification(num_class = 28)
+        decoder["DR+"].__name__ = "DR+"
     if "TAOP" in data:
         decoder["TAOP"] = Decoder_single_classification(num_class = 5)
         decoder["TAOP"].__name__ = "TAOP"
@@ -161,8 +161,8 @@ def get_task_loss(data):
         loss["ODIR-5K"] = nn.BCELoss()
     if "RFMiD" in data:
         loss["RFMiD"] = nn.BCELoss()
-    if "KaggleDR+" in data:
-        loss["KaggleDR+"] = nn.BCELoss()
+    if "DR+" in data:
+        loss["DR+"] = nn.BCELoss()
     if "TAOP" in data:
         loss["TAOP"] = nn.CrossEntropyLoss()
     if "APTOS" in data:

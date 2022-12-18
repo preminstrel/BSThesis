@@ -57,7 +57,7 @@ class Single_Task_Evaluation(object):
             pred_list = np.array(pred_list)
             gt_list = np.array(gt_list)
             
-        if self.args.data in ["ODIR-5K", "RFMiD", "KaggleDR+"]:
+        if self.args.data in ["ODIR-5K", "RFMiD", "DR+"]:
             threshold = 0.5
             # gt = gt_list.flatten()
             # pr = pred_list.flatten()
@@ -67,7 +67,7 @@ class Single_Task_Evaluation(object):
             # print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", Micro F1 Score: ", "red") + str(f1))
 
             result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
-            print(colored("Avg AUC, Avg Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
+            print(colored("Avg AUC, Avg Kappa, AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
 
         elif self.args.data in ["TAOP", "Kaggle", "APTOS"]:
@@ -129,9 +129,9 @@ class Multi_Task_Evaluation(object):
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
                 
-            if valid_dataloader_name in ["ODIR-5K", "KaggleDR+", "RFMiD"]:
+            if valid_dataloader_name in ["ODIR-5K", "DR+", "RFMiD"]:
                 result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
-                print(colored("AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
+                print(colored("Avg AUC, Avg Kappa, AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
 
             elif valid_dataloader_name in ["TAOP", "Kaggle", "APTOS"]:

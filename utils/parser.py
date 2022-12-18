@@ -34,10 +34,11 @@ class ParserArgs(object):
         # data settings
         self.parser.add_argument("--data", type=str, default="TAOP")
         self.parser.add_argument("--image_size", type=int, default=224, help="image size")
+        self.parser.add_argument("--balanced_sampling", action="store_true", help="enable wandb")
 
         # multi-task learning
-        self.parser.add_argument("--multi_task", action="store_true", help="enable wandb")
-        self.parser.add_argument("--method", type=str, default="hard_param_share")
+        self.parser.add_argument("--multi_task", action="store_true", help="enable multi-task")
+        self.parser.add_argument("--method", type=str, default="HPS")
 
     def get_args(self):
         args = self.parser.parse_args()
