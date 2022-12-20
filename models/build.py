@@ -291,7 +291,6 @@ class build_CGC_model(nn.Module):
 
         self.optimizer = torch.optim.Adam(list(self.experts_specific.parameters()) + gate_params + decoder_params, lr=args.lr, betas=(0.5, 0.999))
 
-        self.add_module("experts_specific", self.experts_specific)
         for i in self.decoder:
             self.add_module(str(i), self.decoder[i])
 
@@ -421,6 +420,58 @@ class build_MTAN_model(nn.Module):
     def backward(self, loss = None):
         loss.backward()
         self.optimizer.step()
+
+class build_DSelectK_model(nn.Module):
+    '''
+    build DSelectK multi-task model
+    '''
+    def __init__(self, args):
+        super(build_MMoE_model, self).__init__()
+        type(self).__name__ = "DSelectK"
+        self.args = args
+        self.task_name = args.data.split(", ")
+        self.rep_grad = True
+
+        if self.rep_grad:
+            self.rep_tasks = {}
+            self.rep = {}
+
+        self.decoder = get_task_head(args.data)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+
+        self.input_size = np.array(3*224*224, dtype=int).prod()
+        self.num_experts = 3 # num of shared experts
+        self.encoder = nn.ModuleList([resnet50(pretrained=True) for _ in range(self.num_experts)])
+        self.gate_specific = nn.ModuleDict({task: nn.Sequential(nn.Linear(self.input_size, self.num_experts),
+                                                                nn.Softmax(dim=-1)) for task in self.task_name})
+
+        self.encoder.to(device)
+        self.gate_specific.to(device)
+        num_params, num_trainable_params = count_parameters(self.encoder)
+        gate_num_params, gate_num_trainable_params = count_parameters(self.gate_specific)
+
+        num_params = num_params + gate_num_params
+        num_trainable_params = num_trainable_params + gate_num_trainable_params
+
+        decoder_params = []
+        gate_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            gate_params += list(self.gate_specific[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + gate_params + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+
+        self.add_module("encoder", self.encoder)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
 
 class _transform_resnet_MTAN(nn.Module):
     def __init__(self, resnet_network, task_name, device):

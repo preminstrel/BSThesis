@@ -32,26 +32,39 @@ def save_checkpoint(self, epoch, save_best=False):
     state = {
         'arch': arch,
         'epoch': epoch,
-        'encoder': self.model.encoder.state_dict(),
+        #'encoder': self.model.encoder.state_dict(),
         #'optimizer': optimizer.state_dict(),
     }
     if self.args.multi_task:
-        if self.args.method == "HPS" or "MTAN":
+        if self.args.method == "HPS" or self.args.method == "MTAN":
+            state["encoder"] = self.model.encoder.state_dict()
             for name, layer in self.model.named_children():
                 if name == "encoder":
                     continue
                 state[name] = self.model.decoder[name].state_dict()
 
         elif self.args.method == "MMoE":
+            state["encoder"] = self.model.encoder.state_dict()
             state["gate_specific"] = self.model.gate_specific.state_dict()
             for name, layer in self.model.named_children():
-                if name == "encoder" or "gate_specific":
+                if name == "encoder" or name == "gate_specific":
                     continue
                 state[name] = self.model.decoder[name].state_dict()
+        
+        elif self.args.method == "CGC":
+            state["gate_specific"] = self.model.gate_specific.state_dict()
+            state["experts_shared"] = self.model.experts_shared.state_dict()
+            state["experts_specific"] = self.model.experts_specific.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "experts_shared" or name == "gate_specific" or name == "experts_specific":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
+        
         else:
             terminal_msg(f"Wrong method: {self.args.method}", "F")
 
     else:
+        state["encoder"] = self.model.encoder.state_dict()
         state["decoder"] = self.model.decoder.state_dict()
 
     if save_best:
@@ -79,13 +92,33 @@ def resume_checkpoint(self, resume_path):
     if checkpoint['arch'] != type(self.model).__name__:
         terminal_msg("Architecture in ckpt is different from the model ({}).".format(type(self.model).__name__), "F")
         exit()
-    self.model.encoder.load_state_dict(checkpoint['encoder'])
+    
     if self.args.multi_task:
-        for name, layer in self.model.named_children():
-            if name == "encoder":
-                continue
-            self.model.decoder[name].load_state_dict(checkpoint[name])
+        if self.args.method == "HPS" or self.args.method == "MTAN":
+            self.model.encoder.load_state_dict(checkpoint['encoder'])
+            for name, layer in self.model.named_children():
+                if name == "encoder":
+                    continue
+                self.model.decoder[name].load_state_dict(checkpoint[name])
+        
+        elif self.args.method == "MMoE":
+            self.model.encoder.load_state_dict(checkpoint['encoder'])
+            self.model.gate_specific.load_state_dict(checkpoint['gate_specific'])
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "gate_specific":
+                    continue
+                self.model.decoder[name].load_state_dict(checkpoint[name])
+        
+        elif self.args.method == "CGC":
+            self.model.experts_shared.load_state_dict(checkpoint['experts_shared'])
+            self.model.experts_specific.load_state_dict(checkpoint['experts_specific'])
+            self.model.gate_specific.load_state_dict(checkpoint['gate_specific'])
+            for name, layer in self.model.named_children():
+                if name == "experts_shared" or name == "gate_specific" or name == "experts_specific":
+                    continue
+                self.model.decoder[name].load_state_dict(checkpoint[name])
     else:
+        self.model.encoder.load_state_dict(checkpoint['encoder'])
         self.model.decoder.load_state_dict(checkpoint['decoder'])
     #self.optimizer.load_state_dict(checkpoint['optimizer'])
     terminal_msg("Checkpoint loaded successfully (epoch {})!".format(checkpoint['epoch']), "C")

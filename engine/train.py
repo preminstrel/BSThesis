@@ -176,7 +176,14 @@ class Multi_Task_Trainer(object):
         else:
             self.start_epoch = 1
 
-        self.validate()
+        if self.args.preflight:
+            print(colored("[preflight] ", "cyan") + "Testing ckpt function...")
+            save_checkpoint(self, 0, True)
+            resume_checkpoint(self, f"archive/checkpoints/{args.method}/model_best.pth")
+            terminal_msg("Save and resume function well!", "C")
+            print(colored("[preflight] ", "cyan") + "Testing validation function...")
+            self.validate()
+            print(colored("[preflight] ", "cyan") + "Safe Flight!")
 
         self.train()
 

@@ -25,6 +25,7 @@ class ParserArgs(object):
         self.parser.add_argument("--save_freq", type=int, default=50, help="save frequency")
         self.parser.add_argument("--valid_freq", type=int, default=1, help="validation frequency")
         self.parser.add_argument("--multi_gpus", action="store_true", help="enable DataParallel")
+        self.parser.add_argument("--preflight", action="store_true", help="preflight")
 
         # eval settings
         self.parser.add_argument("--use_wandb", action="store_true", help="enable wandb")
