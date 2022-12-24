@@ -44,4 +44,6 @@ python idea.py --data "DDR" --project DDR --valid_freq 1 --lr 1e-4 --epochs 200 
 
 python idea.py --data "LAG" --project LAG --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
 
+python idea.py --data "PALM" --project PALM --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 64
+
 python idea.py --data "AMD" --mode eval --project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --resume "archive/checkpoints/AMD/model_best.pth"

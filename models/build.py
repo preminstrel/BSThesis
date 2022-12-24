@@ -79,7 +79,11 @@ class build_single_task_model(nn.Module):
         elif self.args.data == "DR+":
             loss = self.KaggleDR_bce_loss(pred, gt)
         elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
-            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            #print(pred.shape, gt.shape)
             loss = self.nll_loss(pred, gt)
             pred = torch.argmax(pred, dim = 1)
         else:
