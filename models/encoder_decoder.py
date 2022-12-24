@@ -165,6 +165,9 @@ def get_task_head(data):
     if "PALM" in data:
         decoder["PALM"] = Decoder_single_classification(num_class = 2)
         decoder["PALM"].__name__ = "PALM"
+    if "REFUGE" in data:
+        decoder["REFUGE"] = Decoder_single_classification(num_class = 2)
+        decoder["REFUGE"].__name__ = "REFUGE"
     return decoder
 
 def get_task_loss(data):
@@ -189,4 +192,6 @@ def get_task_loss(data):
         loss["LAG"] = nn.CrossEntropyLoss()
     if "PALM" in data:
         loss["PALM"] = nn.CrossEntropyLoss()
+    if "REFUGE" in data:
+        loss["REFUGE"] = nn.CrossEntropyLoss()
     return loss

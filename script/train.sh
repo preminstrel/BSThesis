@@ -35,7 +35,7 @@ nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project CGC --multi_task --valid_freq 1 --lr 1e-6 --epochs 4000 --use_wandb --method CGC --batch_size 16 --batches 1600 --resume archive/checkpoints/CGC/epoch_400.pth > archive/logs/CGC/unified.log &
 
-nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 2000 --use_wandb --method MMoE --batch_size 12 --batches 4000 > archive/logs/MMoE/unified.log &
+nohup python idea.py --data "TAOP, APTOS, DDR, PALM, LAG, AMD, REFUGE, ODIR-5K, RFMiD, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 2000 --use_wandb --method MMoE --batch_size 12 --batches 4000 > archive/logs/MMoE/unified.log &
 
 
 python idea.py --data "AMD"--project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
@@ -45,5 +45,7 @@ python idea.py --data "DDR" --project DDR --valid_freq 1 --lr 1e-4 --epochs 200 
 python idea.py --data "LAG" --project LAG --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
 
 python idea.py --data "PALM" --project PALM --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 64
+
+python idea.py --data "TAOP, APTOS, DDR, PALM, LAG, AMD, REFUGE, ODIR-5K, RFMiD, DR+" --project DSelectK --multi_task --valid_freq 1 --lr 1e-4 --epochs 400 --method DSelectK --batch_size 12 --batches 2000
 
 python idea.py --data "AMD" --mode eval --project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --resume "archive/checkpoints/AMD/model_best.pth"

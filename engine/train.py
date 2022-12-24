@@ -141,7 +141,7 @@ class Single_Task_Trainer(object):
                         #"Samples F1 Score": result['samples/f1'],})
             acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
 
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
             result = single_label_metrics(pred_list, gt_list)
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
@@ -188,6 +188,7 @@ class Multi_Task_Trainer(object):
         self.train()
 
     def train(self):
+        self.model.args.mode = 'train'
         best_precision = 0
         save_best = False
         prev_time = time.time()
@@ -244,6 +245,7 @@ class Multi_Task_Trainer(object):
         terminal_msg("Training phase finished!", "C")
 
     def validate(self):
+        self.model.args.mode = 'validate'
         acc = []
         all_acc = []
         print(colored('\n[Executing]', 'blue'), 'Start validating...')
@@ -266,7 +268,7 @@ class Multi_Task_Trainer(object):
                     pred, _ = self.model.process(img, gt, valid_dataloader_name)
                     pred = pred.cpu().tolist()
                     gt = gt.cpu().tolist()
-                    if self.args.data in ["TAOP", "APTOS", "Kaggle"]:
+                    if self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR", "PALM", "LAG", "AMD", "REFUGE"]:
                         gt = [item for sublist in gt for item in sublist]
                         gt = [int(x) for x in gt]
 
@@ -293,7 +295,7 @@ class Multi_Task_Trainer(object):
                 acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
                 all_acc.append(acc)
 
-            elif valid_dataloader_name in ["TAOP", "APTOS", "Kaggle"]:
+            elif valid_dataloader_name in ["TAOP", "APTOS", "Kaggle", "DDR", "PALM", "LAG", "AMD", "REFUGE"]:
                 result = single_label_metrics(pred_list, gt_list)
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 

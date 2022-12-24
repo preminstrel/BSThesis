@@ -36,6 +36,8 @@ def get_data_weights(args):
 
     return weights
 
+#===========================================Transforms===============================================#
+
 def get_train_transforms(img_size):
     '''
     resize (256)-> random crop (224) -> random filp -> color distortion -> GaussianBlur -> normalize
@@ -65,6 +67,8 @@ def get_valid_transforms(img_size):
     ])
     return transform
 
+#==============================================APIs==================================================#
+
 def get_train_datasets(args, transform):
     datasets = {}
     if "ODIR-5K" in args.data:
@@ -79,6 +83,16 @@ def get_train_datasets(args, transform):
         datasets["Kaggle"] = TrainDataset('Kaggle', transform)
     if "DR+" in args.data:
         datasets["DR+"] = TrainDataset('DR+', transform)
+    if "AMD" in args.data:
+        datasets["AMD"] = TrainDataset('AMD', transform)
+    if "DDR" in args.data:
+        datasets["DDR"] = TrainDataset('DDR', transform)
+    if "LAG" in args.data:
+        datasets["LAG"] = TrainDataset('LAG', transform)
+    if "PALM" in args.data:
+        datasets["PALM"] = TrainDataset('PALM', transform)
+    if "REFUGE" in args.data:
+        datasets["REFUGE"] = TrainDataset('REFUGE', transform)
     else:
         terminal_msg("Args.Data Error (From get_train_datasets)", "F")
         exit()
@@ -98,6 +112,16 @@ def get_valid_datasets(args, transform):
         datasets["Kaggle"] = ValidDataset('Kaggle', transform)
     if "DR+" in args.data:
         datasets["DR+"] = ValidDataset('DR+', transform)
+    if "AMD" in args.data:
+        datasets["AMD"] = ValidDataset('AMD', transform)
+    if "DDR" in args.data:
+        datasets["DDR"] = ValidDataset('DDR', transform)
+    if "LAG" in args.data:
+        datasets["LAG"] = ValidDataset('LAG', transform)
+    if "PALM" in args.data:
+        datasets["PALM"] = ValidDataset('PALM', transform)
+    if "REFUGE" in args.data:
+        datasets["REFUGE"] = ValidDataset('REFUGE', transform)
     else:
         terminal_msg("Args.Data Error (From get_valid_datasets)", "F")
         exit()
@@ -117,6 +141,16 @@ def get_train_dataloader(args, transform):
         dataloaders["Kaggle"] = DataLoader(TrainDataset('Kaggle', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "DR+" in args.data:
         dataloaders["DR+"] = DataLoader(TrainDataset('DR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "AMD" in args.data:
+        dataloaders["AMD"] = DataLoader(TrainDataset('AMD', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "DDR" in args.data:
+        dataloaders["DDR"] = DataLoader(TrainDataset('DDR', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "LAG" in args.data:
+        dataloaders["LAG"] = DataLoader(TrainDataset('LAG', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "PALM" in args.data:
+        dataloaders["PALM"] = DataLoader(TrainDataset('PALM', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "REFUGE" in args.data:
+        dataloaders["REFUGE"] = DataLoader(TrainDataset('REFUGE', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     else:
         terminal_msg("Args.Data Error (From get_train_dataloder)", "F")
         exit()
@@ -136,6 +170,16 @@ def get_valid_dataloader(args, transform):
         dataloaders["Kaggle"] = DataLoader(ValidDataset('Kaggle', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "DR+" in args.data:
         dataloaders["DR+"] = DataLoader(ValidDataset('DR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "AMD" in args.data:
+        dataloaders["AMD"] = DataLoader(ValidDataset('AMD', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "DDR" in args.data:
+        dataloaders["DDR"] = DataLoader(ValidDataset('DDR', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "LAG" in args.data:
+        dataloaders["LAG"] = DataLoader(ValidDataset('LAG', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "PALM" in args.data:
+        dataloaders["PALM"] = DataLoader(ValidDataset('PALM', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+    if "REFUGE" in args.data:
+        dataloaders["REFUGE"] = DataLoader(ValidDataset('REFUGE', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     assert dataloaders
     return dataloaders
 
@@ -197,6 +241,60 @@ def get_train_data(args, transform):
             data['Kaggle']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
         data['Kaggle']['iterloader'] = iter(data['Kaggle']['dataloader'])
     
+    if 'AMD' in args.data:
+        data['AMD'] = {}
+        train_dataset = TrainDataset('AMD', transform)
+        if args.balanced_sampling:
+            data['AMD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['AMD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['AMD']['iterloader'] = iter(data['AMD']['dataloader'])
+    
+    if 'DDR' in args.data:
+        data['DDR'] = {}
+        train_dataset = TrainDataset('DDR', transform)
+        if args.balanced_sampling:
+            data['DDR']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['DDR']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['DDR']['iterloader'] = iter(data['DDR']['dataloader'])
+    
+    if 'LAG' in args.data:
+        data['LAG'] = {}
+        train_dataset = TrainDataset('LAG', transform)
+        if args.balanced_sampling:
+            data['LAG']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['LAG']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['LAG']['iterloader'] = iter(data['LAG']['dataloader'])
+    
+    if 'RFMiD' in args.data:
+        data['RFMiD'] = {}
+        train_dataset = TrainDataset('RFMiD', transform)
+        if args.balanced_sampling:
+            data['RFMiD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['RFMiD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['RFMiD']['iterloader'] = iter(data['RFMiD']['dataloader'])
+    
+    if 'PALM' in args.data:
+        data['PALM'] = {}
+        train_dataset = TrainDataset('PALM', transform)
+        if args.balanced_sampling:
+            data['PALM']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['PALM']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['PALM']['iterloader'] = iter(data['PALM']['dataloader'])
+    
+    if 'REFUGE' in args.data:
+        data['REFUGE'] = {}
+        train_dataset = TrainDataset('REFUGE', transform)
+        if args.balanced_sampling:
+            data['REFUGE']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
+        else:
+            data['REFUGE']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        data['REFUGE']['iterloader'] = iter(data['REFUGE']['dataloader'])
+    
     assert data
     return data
 
@@ -215,7 +313,7 @@ def get_single_task_train_dataloader(args, train_transfrom, valid_transform):
     if args.balanced_sampling:
         if args.data in ["ODIR-5K", "RFMiD", "DR+"]:
             sampler = MultilabelBalancedRandomSampler(train_dataset.get_labels())
-        elif args.data in ["TAOP", "APTOS", "Kaggle"]:
+        elif args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
             sampler = ImbalancedDatasetSampler(train_dataset)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler)
     else:
@@ -225,8 +323,7 @@ def get_single_task_train_dataloader(args, train_transfrom, valid_transform):
 
     return train_dataloader, valid_dataloader
 
-
-#=====================Datasets=========================#
+#============================================Datasets================================================#
 
 class TrainDataset(data.Dataset):
     """ 
@@ -243,6 +340,7 @@ class TrainDataset(data.Dataset):
     DDR: 6,835 samples
     LAG: 3,884 samples
     PALM: 641 samples
+    REFUGE: 400 samples
     """
 
     def __init__(self, data, transform=None):
@@ -278,6 +376,9 @@ class TrainDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
         elif self.data == 'PALM':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'REFUGE':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/REFUGE/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
         else:
             terminal_msg("Args.Data ({}) Error (From TrainDataset.__init__)".format(data), "F")
@@ -320,6 +421,8 @@ class TrainDataset(data.Dataset):
             img_path = os.path.join(self.data_root, 'train/', str(self.landmarks_frame.iloc[idx, 0]))
         elif self.data == 'PALM':
             img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'REFUGE':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
             exit()
@@ -329,7 +432,7 @@ class TrainDataset(data.Dataset):
 
         if self.data in ["ODIR-5K", "RFMiD", "DR+"]:
             sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
-        elif self.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+        elif self.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
             sample = {'image': img, 'landmarks': torch.tensor(landmarks).int()}
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
@@ -358,6 +461,7 @@ class ValidDataset(data.Dataset):
     DDR: 2,733 samples
     LAG: 970 samples
     PALM: 159 samples
+    REFUGE: 400 samples
     """
 
     def __init__(self, data, transform=None):
@@ -393,6 +497,9 @@ class ValidDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'PALM':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM//'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+        elif self.data == 'REFUGE':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/REFUGE/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__init__)", "F")
@@ -434,6 +541,8 @@ class ValidDataset(data.Dataset):
         elif self.data == 'LAG':
             img_path = os.path.join(self.data_root, 'valid/', str(self.landmarks_frame.iloc[idx, 0]))
         elif self.data == 'PALM':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'REFUGE':
             img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__getitem__)", "F")

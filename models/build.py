@@ -5,6 +5,7 @@ from .encoder_decoder import get_task_head, get_task_loss
 import torch.nn as nn
 import torch
 import numpy as np
+import math
 
 from utils.info import terminal_msg, get_device
 from utils.model import count_parameters
@@ -48,6 +49,9 @@ class build_single_task_model(nn.Module):
         elif args.data == "PALM":
             self.decoder = Decoder_single_classification(num_class = 2)
             type(self).__name__ = "PALM"
+        elif args.data == "REFUGE":
+            self.decoder = Decoder_single_classification(num_class = 2)
+            type(self).__name__ = "REFUGE"
         else:
             terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
             exit()
@@ -78,7 +82,7 @@ class build_single_task_model(nn.Module):
             loss = self.RFMiD_bce_loss(pred, gt)
         elif self.args.data == "DR+":
             loss = self.KaggleDR_bce_loss(pred, gt)
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
@@ -137,8 +141,11 @@ class build_hard_param_share_model(nn.Module):
         presentation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle"]:
-            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
             return pred, loss
@@ -215,8 +222,11 @@ class build_MMoE_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle"]:
-            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
             return pred, loss
@@ -323,8 +333,11 @@ class build_CGC_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle"]:
-            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
             return pred, loss
@@ -423,8 +436,11 @@ class build_MTAN_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle"]:
-            gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
             return pred, loss
@@ -442,7 +458,7 @@ class build_DSelectK_model(nn.Module):
     build DSelectK multi-task model
     '''
     def __init__(self, args):
-        super(build_MMoE_model, self).__init__()
+        super(build_DSelectK_model, self).__init__()
         type(self).__name__ = "DSelectK"
         self.args = args
         self.task_name = args.data.split(", ")
@@ -459,22 +475,34 @@ class build_DSelectK_model(nn.Module):
         self.input_size = np.array(3*224*224, dtype=int).prod()
         self.num_experts = 3 # num of shared experts
         self.encoder = nn.ModuleList([resnet50(pretrained=True) for _ in range(self.num_experts)])
-        self.gate_specific = nn.ModuleDict({task: nn.Sequential(nn.Linear(self.input_size, self.num_experts),
-                                                                nn.Softmax(dim=-1)) for task in self.task_name})
+
+        self._num_nonzeros = 1
+        self._gamma = 1
+        
+        self._num_binary = math.ceil(math.log2(self.num_experts))
+        self._power_of_2 = (self.num_experts == 2 ** self._num_binary)
+        
+        self._z_logits = nn.ModuleDict({task: nn.Linear(self.input_size, 
+                                                        self._num_nonzeros*self._num_binary) for task in self.task_name})
+        self._w_logits = nn.ModuleDict({task: nn.Linear(self.input_size, self._num_nonzeros) for task in self.task_name})
+
+        # initialization
+        for param in self._z_logits.parameters():
+            param.data.uniform_(-self._gamma/100, self._gamma/100)
+        for param in self._w_logits.parameters():
+            param.data.uniform_(-0.05, 0.05)
+        
+        binary_matrix = np.array([list(np.binary_repr(val, width=self._num_binary)) \
+                                  for val in range(self.num_experts)]).astype(bool)
+        self._binary_codes = torch.from_numpy(binary_matrix).to(device).unsqueeze(0)  
 
         self.encoder.to(device)
-        self.gate_specific.to(device)
         num_params, num_trainable_params = count_parameters(self.encoder)
-        gate_num_params, gate_num_trainable_params = count_parameters(self.gate_specific)
-
-        num_params = num_params + gate_num_params
-        num_trainable_params = num_trainable_params + gate_num_trainable_params
 
         decoder_params = []
-        gate_params = []
+
         for i in self.decoder:
             decoder_params += list(self.decoder[i].parameters())
-            gate_params += list(self.gate_specific[i].parameters())
             self.decoder[i].to(device)
             num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
             num_params += num_params_increment
@@ -483,11 +511,83 @@ class build_DSelectK_model(nn.Module):
         self.num_params = num_params
         self.num_trainable_params = num_trainable_params
 
-        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + gate_params + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + decoder_params, lr=args.lr, betas=(0.5, 0.999))
 
         self.add_module("encoder", self.encoder)
         for i in self.decoder:
             self.add_module(str(i), self.decoder[i])
+    
+    def _smooth_step_fun(self, t, gamma=1.0):
+        return torch.where(t<=-gamma/2, torch.zeros_like(t, device=t.device),
+                   torch.where(t>=gamma/2, torch.ones_like(t, device=t.device),
+                         (-2/(gamma**3))*(t**3) + (3/(2*gamma))*t + 1/2))
+    
+    def _entropy_reg_loss(self, inputs):
+        loss = -(inputs*torch.log(inputs+1e-6)).sum() * 1e-6
+        if not self._power_of_2:
+            loss += (1/inputs.sum(-1)).sum()
+        loss.backward(retain_graph=True)
+    
+    def forward(self, inputs, head=None):
+        experts_shared_rep = torch.stack([e(inputs) for e in self.encoder])
+        sample_logits = self._z_logits[head](torch.flatten(inputs, start_dim=1))
+        sample_logits = sample_logits.reshape(-1, self._num_nonzeros, 1, self._num_binary)
+        smooth_step_activations = self._smooth_step_fun(sample_logits)
+        selector_outputs = torch.where(self._binary_codes.unsqueeze(0), smooth_step_activations, 
+                                        1 - smooth_step_activations).prod(3)
+        selector_weights = nn.functional.softmax(self._w_logits[head](torch.flatten(inputs, start_dim=1)), dim=1)
+        expert_weights = torch.einsum('ij, ij... -> i...', selector_weights, selector_outputs)
+        gate_rep = torch.einsum('ij, ji... -> i...', expert_weights, experts_shared_rep)
+        gate_rep = self._prepare_rep(gate_rep, head, same_rep=False)
+        out = self.decoder[head](gate_rep)
+
+        if self.args.mode == 'train':
+            self._entropy_reg_loss(selector_outputs)
+        
+        return gate_rep, out
+
+    def process(self, img, gt, head):
+        representation, pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None):
+        loss.backward()
+        self.optimizer.step()
+
+    def get_share_params(self):
+        r"""Return the shared parameters of the model.
+        """
+        return self.encoder.parameters()
+
+    def zero_grad_share_params(self):
+        r"""Set gradients of the shared parameters to zero.
+        """
+        self.encoder.zero_grad()
+        
+    def _prepare_rep(self, rep, task, same_rep=None):
+        if self.rep_grad:
+            if not same_rep:
+                self.rep[task] = rep
+            else:
+                self.rep = rep
+            self.rep_tasks[task] = rep.detach().clone()
+            self.rep_tasks[task].requires_grad = True
+            return self.rep_tasks[task]
+        else:
+            return rep
 
 class _transform_resnet_MTAN(nn.Module):
     def __init__(self, resnet_network, task_name, device):

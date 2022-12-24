@@ -50,6 +50,15 @@ def save_checkpoint(self, epoch, save_best=False):
                 if name == "encoder" or name == "gate_specific":
                     continue
                 state[name] = self.model.decoder[name].state_dict()
+
+        elif self.args.method == "DSelectK":
+            state["encoder"] = self.model.encoder.state_dict()
+            state["_z_logits"] = self.model._z_logits.state_dict()
+            state["_w_logits"] = self.model._w_logits.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "gate_specific" or name == "_z_logits" or name == "_w_logits":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
         
         elif self.args.method == "CGC":
             state["gate_specific"] = self.model.gate_specific.state_dict()
