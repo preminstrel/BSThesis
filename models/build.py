@@ -36,6 +36,18 @@ class build_single_task_model(nn.Module):
         elif args.data == "DR+":
             self.decoder = Decoder_multi_classification(num_class = 28)
             type(self).__name__ = "DR+"
+        elif args.data == "AMD":
+            self.decoder = Decoder_single_classification(num_class = 2)
+            type(self).__name__ = "AMD"
+        elif args.data == "DDR":
+            self.decoder = Decoder_single_classification(num_class = 6)
+            type(self).__name__ = "DDR"
+        elif args.data == "LAG":
+            self.decoder = Decoder_single_classification(num_class = 2)
+            type(self).__name__ = "LAG"
+        elif args.data == "PALM":
+            self.decoder = Decoder_single_classification(num_class = 2)
+            type(self).__name__ = "PALM"
         else:
             terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
             exit()
@@ -66,7 +78,7 @@ class build_single_task_model(nn.Module):
             loss = self.RFMiD_bce_loss(pred, gt)
         elif self.args.data == "DR+":
             loss = self.KaggleDR_bce_loss(pred, gt)
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
             gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.nll_loss(pred, gt)
             pred = torch.argmax(pred, dim = 1)

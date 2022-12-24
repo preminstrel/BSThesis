@@ -239,6 +239,10 @@ class TrainDataset(data.Dataset):
     TAOP: 3,000 samples
     APTOS: 3,295 samples
     Kaggle: 35,126 samples
+    AMD: 321 samples
+    DDR: 6,835 samples
+    LAG: 3,884 samples
+    PALM: 641 samples
     """
 
     def __init__(self, data, transform=None):
@@ -262,6 +266,18 @@ class TrainDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'trainLabels.csv')
         elif self.data == 'DR+':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'AMD':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/Training400/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'DDR':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/DDR/DDR-dataset/DR_grading/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'LAG':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/LAG/dataset/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'PALM':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
         else:
             terminal_msg("Args.Data ({}) Error (From TrainDataset.__init__)".format(data), "F")
@@ -296,6 +312,14 @@ class TrainDataset(data.Dataset):
             else:
                 print('Cannot find img path (DR+)')
                 exit()
+        elif self.data == 'AMD':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'DDR':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'LAG':
+            img_path = os.path.join(self.data_root, 'train/', str(self.landmarks_frame.iloc[idx, 0]))
+        elif self.data == 'PALM':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
             exit()
@@ -305,7 +329,7 @@ class TrainDataset(data.Dataset):
 
         if self.data in ["ODIR-5K", "RFMiD", "DR+"]:
             sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
-        elif self.data in ["TAOP", "APTOS", "Kaggle"]:
+        elif self.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
             sample = {'image': img, 'landmarks': torch.tensor(landmarks).int()}
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
@@ -330,6 +354,10 @@ class ValidDataset(data.Dataset):
     TAOP: 297 samples
     APTOS: 367 samples
     Kaggle: 2,000 samples (for valid only)
+    AMD: 79 samples
+    DDR: 2,733 samples
+    LAG: 970 samples
+    PALM: 159 samples
     """
 
     def __init__(self, data, transform=None):
@@ -350,9 +378,21 @@ class ValidDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'Kaggle':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/Kaggle/'
-            self.landmarks_frame = pd.read_csv(self.data_root + 'label_test.csv')
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'DR+':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+        elif self.data == 'AMD':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/Training400/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+        elif self.data == 'DDR':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/DDR/DDR-dataset/DR_grading/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+        elif self.data == 'LAG':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/LAG/dataset/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+        elif self.data == 'PALM':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM//'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__init__)", "F")
@@ -387,6 +427,14 @@ class ValidDataset(data.Dataset):
             else:
                 print('Cannot find img path (DR+)')
                 exit()
+        elif self.data == 'AMD':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'DDR':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'LAG':
+            img_path = os.path.join(self.data_root, 'valid/', str(self.landmarks_frame.iloc[idx, 0]))
+        elif self.data == 'PALM':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__getitem__)", "F")
             exit()

@@ -38,4 +38,10 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS,
 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 2000 --use_wandb --method MMoE --batch_size 12 --batches 4000 > archive/logs/MMoE/unified.log &
 
 
-python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 4000  --method MMoE --batch_size 128 --preflight
+python idea.py --data "AMD"--project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
+
+python idea.py --data "DDR" --project DDR --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
+
+python idea.py --data "LAG" --project LAG --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
+
+python idea.py --data "AMD" --mode eval --project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --resume "archive/checkpoints/AMD/model_best.pth"

@@ -141,7 +141,7 @@ class Single_Task_Trainer(object):
                         #"Samples F1 Score": result['samples/f1'],})
             acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
 
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
             result = single_label_metrics(pred_list, gt_list)
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 

@@ -153,6 +153,18 @@ def get_task_head(data):
     if "Kaggle" in data:
         decoder["Kaggle"] = Decoder_single_classification(num_class = 5)
         decoder["Kaggle"].__name__ = "Kaggle"
+    if "AMD" in data:
+        decoder["AMD"] = Decoder_single_classification(num_class = 2)
+        decoder["AMD"].__name__ = "AMD"
+    if "DDR" in data:
+        decoder["DDR"] = Decoder_single_classification(num_class = 6)
+        decoder["DDR"].__name__ = "DDR"
+    if "LAG" in data:
+        decoder["LAG"] = Decoder_single_classification(num_class = 2)
+        decoder["LAG"].__name__ = "LAG"
+    if "PALM" in data:
+        decoder["PALM"] = Decoder_single_classification(num_class = 2)
+        decoder["PALM"].__name__ = "PALM"
     return decoder
 
 def get_task_loss(data):
@@ -169,4 +181,12 @@ def get_task_loss(data):
         loss["APTOS"] = nn.CrossEntropyLoss()
     if "Kaggle" in data:
         loss["Kaggle"] = nn.CrossEntropyLoss()
+    if "AMD" in data:
+        loss["AMD"] = nn.CrossEntropyLoss()
+    if "DDR" in data:
+        loss["DDR"] = nn.CrossEntropyLoss()
+    if "LAG" in data:
+        loss["LAG"] = nn.CrossEntropyLoss()
+    if "PALM" in data:
+        loss["PALM"] = nn.CrossEntropyLoss()
     return loss

@@ -68,7 +68,7 @@ class Single_Task_Evaluation(object):
             print(colored("Avg AUC, Avg Kappa, AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
 
-        elif self.args.data in ["TAOP", "Kaggle", "APTOS"]:
+        elif self.args.data in ["TAOP", "Kaggle", "APTOS", "AMD", "DDR", "LAG", "PALM"]:
             result = single_label_metrics(pred_list, gt_list)
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
@@ -130,7 +130,7 @@ class Multi_Task_Evaluation(object):
                 print(colored("Avg AUC, Avg Kappa, AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
 
-            elif valid_dataloader_name in ["TAOP", "Kaggle", "APTOS"]:
+            elif valid_dataloader_name in ["TAOP", "Kaggle", "APTOS", "AMD", "DDR", "LAG", "PALM"]:
                 result = single_label_metrics(pred_list, gt_list)
                 print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
