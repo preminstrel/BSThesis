@@ -43,3 +43,4 @@ def single_label_metrics(pred, target):
         'macro/recall': recall_score(y_true=target, y_pred=pred, average='macro'),
         'macro/f1': f1_score(y_true=target, y_pred=pred, average='macro'),
         }
+

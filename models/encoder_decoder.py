@@ -154,19 +154,19 @@ def get_task_head(data):
         decoder["Kaggle"] = Decoder_single_classification(num_class = 5)
         decoder["Kaggle"].__name__ = "Kaggle"
     if "AMD" in data:
-        decoder["AMD"] = Decoder_single_classification(num_class = 2)
+        decoder["AMD"] = Decoder_multi_classification(num_class = 1)
         decoder["AMD"].__name__ = "AMD"
     if "DDR" in data:
         decoder["DDR"] = Decoder_single_classification(num_class = 6)
         decoder["DDR"].__name__ = "DDR"
     if "LAG" in data:
-        decoder["LAG"] = Decoder_single_classification(num_class = 2)
+        decoder["LAG"] = Decoder_multi_classification(num_class = 1)
         decoder["LAG"].__name__ = "LAG"
     if "PALM" in data:
-        decoder["PALM"] = Decoder_single_classification(num_class = 2)
+        decoder["PALM"] = Decoder_multi_classification(num_class = 1)
         decoder["PALM"].__name__ = "PALM"
     if "REFUGE" in data:
-        decoder["REFUGE"] = Decoder_single_classification(num_class = 2)
+        decoder["REFUGE"] = Decoder_multi_classification(num_class = 1)
         decoder["REFUGE"].__name__ = "REFUGE"
     return decoder
 
@@ -185,13 +185,13 @@ def get_task_loss(data):
     if "Kaggle" in data:
         loss["Kaggle"] = nn.CrossEntropyLoss()
     if "AMD" in data:
-        loss["AMD"] = nn.CrossEntropyLoss()
+        loss["AMD"] = nn.BCELoss()
     if "DDR" in data:
         loss["DDR"] = nn.CrossEntropyLoss()
     if "LAG" in data:
-        loss["LAG"] = nn.CrossEntropyLoss()
+        loss["LAG"] = nn.BCELoss()
     if "PALM" in data:
-        loss["PALM"] = nn.CrossEntropyLoss()
+        loss["PALM"] = nn.BCELoss()
     if "REFUGE" in data:
-        loss["REFUGE"] = nn.CrossEntropyLoss()
+        loss["REFUGE"] = nn.BCELoss()
     return loss

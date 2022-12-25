@@ -9,6 +9,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from termcolor import colored
 from torch.nn import DataParallel
 import os
+from sklearn.metrics import roc_auc_score
 
 from data.dataset import get_data_weights, get_batch
 
@@ -141,7 +142,7 @@ class Single_Task_Trainer(object):
                         #"Samples F1 Score": result['samples/f1'],})
             acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
 
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             result = single_label_metrics(pred_list, gt_list)
             print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
 
@@ -149,7 +150,13 @@ class Single_Task_Trainer(object):
                 wandb.log({"Micro F1 Score": result['micro/f1'],
                         "Macro F1 Score": result['macro/f1'],})
             acc = np.mean([result['micro/f1'], result['macro/f1']])
-        
+
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            auc = roc_auc_score(gt_list, pred_list)
+            print(colored("AUC: ", "red") + str(auc))
+            if self.args.use_wandb:
+                wandb.log({"AUC": auc})
+            acc = auc
 
         terminal_msg("Validation finished!", "C")
         return acc

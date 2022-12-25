@@ -38,19 +38,19 @@ class build_single_task_model(nn.Module):
             self.decoder = Decoder_multi_classification(num_class = 28)
             type(self).__name__ = "DR+"
         elif args.data == "AMD":
-            self.decoder = Decoder_single_classification(num_class = 2)
+            self.decoder = Decoder_multi_classification(num_class = 1)
             type(self).__name__ = "AMD"
         elif args.data == "DDR":
             self.decoder = Decoder_single_classification(num_class = 6)
             type(self).__name__ = "DDR"
         elif args.data == "LAG":
-            self.decoder = Decoder_single_classification(num_class = 2)
+            self.decoder = Decoder_multi_classification(num_class = 1)
             type(self).__name__ = "LAG"
         elif args.data == "PALM":
-            self.decoder = Decoder_single_classification(num_class = 2)
+            self.decoder = Decoder_multi_classification(num_class = 1)
             type(self).__name__ = "PALM"
         elif args.data == "REFUGE":
-            self.decoder = Decoder_single_classification(num_class = 2)
+            self.decoder = Decoder_multi_classification(num_class = 1)
             type(self).__name__ = "REFUGE"
         else:
             terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
@@ -64,6 +64,8 @@ class build_single_task_model(nn.Module):
         self.KaggleDR_bce_loss = nn.BCELoss()
 
         self.nll_loss = nn.CrossEntropyLoss()
+
+        self.binary_loss = nn.BCELoss()
 
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()), lr=args.lr)
 
@@ -82,7 +84,7 @@ class build_single_task_model(nn.Module):
             loss = self.RFMiD_bce_loss(pred, gt)
         elif self.args.data == "DR+":
             loss = self.KaggleDR_bce_loss(pred, gt)
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
@@ -90,6 +92,11 @@ class build_single_task_model(nn.Module):
             #print(pred.shape, gt.shape)
             loss = self.nll_loss(pred, gt)
             pred = torch.argmax(pred, dim = 1)
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.binary_loss(pred, gt)
         else:
             terminal_msg("Error (From build_single_task_model.process)", "F")
             exit()
@@ -589,6 +596,10 @@ class build_DSelectK_model(nn.Module):
         else:
             return rep
 
+
+
+#===============
+
 class _transform_resnet_MTAN(nn.Module):
     def __init__(self, resnet_network, task_name, device):
         super(_transform_resnet_MTAN, self).__init__()
@@ -673,3 +684,38 @@ class _transform_resnet_MTAN(nn.Module):
             return att_rep
         else:
             return att_rep[self.task_name.index(self.forward_task)]
+
+class _transform_resnet_ltb(nn.Module):
+    def __init__(self, encoder_list, task_name, device):
+        super(_transform_resnet_ltb, self).__init__()
+        
+        self.task_name = task_name
+        self.task_num = len(task_name)
+        self.device = device
+        # self.epochs = epochs
+        self.resnet_conv = nn.ModuleDict({task: nn.Sequential(encoder_list[tn].conv1, encoder_list[tn].bn1, 
+                                                              encoder_list[tn].relu, encoder_list[tn].maxpool) for tn, task in enumerate(self.task_name)})
+        self.resnet_layer = nn.ModuleDict({})
+        for i in range(4):
+            self.resnet_layer[str(i)] = nn.ModuleList([])
+            for tn in range(self.task_num):
+                encoder = encoder_list[tn]
+                self.resnet_layer[str(i)].append(eval('encoder.layer'+str(i+1)))
+        self.alpha = nn.Parameter(torch.ones(6, self.task_num, self.task_num))
+        
+    def forward(self, inputs, epoch, epochs):
+        if epoch < epochs/100: # warmup
+            alpha = torch.ones(6, self.task_num, self.task_num).to(self.device)
+        else:
+            tau = epochs/20 / np.sqrt(epoch+1) # tau decay
+            alpha = F.gumbel_softmax(self.alpha, dim=-1, tau=tau, hard=True)
+
+        ss_rep = {i: [0]*self.task_num for i in range(5)}
+        for i in range(5): # i: layer idx
+            for tn, task in enumerate(self.task_name): # tn: task idx
+                if i == 0:
+                    ss_rep[i][tn] = self.resnet_conv[task](inputs)
+                else:
+                    child_rep = sum([alpha[i,tn,j]*ss_rep[i-1][j] for j in range(self.task_num)]) # j: module idx
+                    ss_rep[i][tn] = self.resnet_layer[str(i-1)][tn](child_rep)
+        return ss_rep[4]

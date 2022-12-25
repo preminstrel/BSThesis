@@ -429,14 +429,15 @@ class TrainDataset(data.Dataset):
 
         img = self.load_image(img_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
+        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
 
-        if self.data in ["ODIR-5K", "RFMiD", "DR+"]:
-            sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
-        elif self.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
-            sample = {'image': img, 'landmarks': torch.tensor(landmarks).int()}
-        else:
-            terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
-            exit()
+        # if self.data in ["ODIR-5K", "RFMiD", "DR+"]:
+        #     sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
+        # elif self.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+        #     sample = {'image': img, 'landmarks': torch.tensor(landmarks).int()}
+        # else:
+        #     terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
+        #     exit()
 
         return sample
 

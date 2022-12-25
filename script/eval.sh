@@ -7,3 +7,11 @@ CUDA_VISIBLE_DEVICES=1 python idea.py --mode eval --data DR+ --resume archive/ch
 # Micro F1 Score: 0.7091295116772824, Macro F1 Score: 0.6009858310022451, Samples F1 Score: 0.6907166907166907
 
 # CUDA_VISIBLE_DEVICES=1 python idea.py --mode eval --multi_task --batch_size 13 --data "ODIR-5K, TAOP, RFMiD, DR+, Kaggle, APTOS" --resume archive/checkpoints/Hard_Params/model_best.pth
+
+python idea.py --data "DDR" --project DDR --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --mode eval --resume archive/checkpoints/DDR/model_best.pth
+
+python idea.py --data "AMD"--project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --mode eval --resume archive/checkpoints/AMD/model_best.pth
+
+python idea.py --data "LAG" --project LAG --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --mode eval --resume archive/checkpoints/LAG/model_best.pth
+
+python idea.py --data ""
