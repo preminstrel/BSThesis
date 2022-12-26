@@ -5,7 +5,7 @@ from torchsummary import summary
 import warnings
 import os
 
-from models.build import build_single_task_model, build_hard_param_share_model, build_MMoE_model, build_CGC_model, build_MTAN_model, build_DSelectK_model
+from models.build import build_single_task_model, build_HPS_model, build_MMoE_model, build_CGC_model, build_MTAN_model, build_DSelectK_model, build_LTB_model
 
 from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     if args.multi_task:
         if args.method == "HPS":
-            model = build_hard_param_share_model(args)
+            model = build_HPS_model(args)
         elif args.method == "MMoE":
             model = build_MMoE_model(args)
         elif args.method == "CGC":
@@ -36,6 +36,8 @@ if __name__ == "__main__":
             model = build_MTAN_model(args)
         elif args.method == "DSelectK":
             model = build_DSelectK_model(args)
+        elif args.method == "LTB":
+            model = build_LTB_model(args)
         else:
             terminal_msg(f"Wrong mothod {args.method}", "F")
     else:

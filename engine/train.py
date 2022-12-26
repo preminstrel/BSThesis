@@ -15,7 +15,7 @@ from data.dataset import get_data_weights, get_batch
 
 from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
-from utils.metrics import Multi_AUC_and_Kappa, multi_label_metrics, single_label_metrics, roc_auc_score, accuracy_score
+from utils.metrics import multi_label_metrics, single_label_metrics, roc_auc_score, accuracy_score, binary_metrics
 
 
 def setup_seed(seed):
@@ -131,35 +131,44 @@ class Single_Task_Trainer(object):
             gt_list = np.array(gt_list, dtype=np.float32)
             
         if self.args.data in ["ODIR-5K", "RFMiD", "DR+"]:
-            result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
-            auc, kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
-            print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", F1 Score: ", "red") + str(result['micro/f1']))
+            avg_auc, avg_kappa, avg_f1 = multi_label_metrics(gt_list, pred_list)
+            print(colored("Avg AUC, Avg Kappa, Avg F1 Socre: ", "red"), (avg_auc, avg_kappa, avg_f1))
             if self.args.use_wandb:
-                wandb.log({"AUC": auc,
-                           "Kappa": kappa,
-                           "F1 Score": result['micro/f1'],})
-                        # "Macro F1 Score": result['macro/f1'],
-                        #"Samples F1 Score": result['samples/f1'],})
-            acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
+                wandb.log({"Avg AUC": avg_auc,
+                           "Avg Kappa": avg_kappa,
+                           "Avg F1 Score": avg_f1,})
+            precision = np.mean([avg_auc, avg_kappa, avg_f1])
 
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR"]:
-            result = single_label_metrics(pred_list, gt_list)
-            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
+        elif self.args.data in ["Kaggle", "APTOS", "DDR"]:
+            acc, kappa = single_label_metrics(gt_list, pred_list)
+            print(colored("Acc, Quadratic Weighted Kappa: ", "red"), (acc, kappa))
 
             if self.args.use_wandb:
-                wandb.log({"Micro F1 Score": result['micro/f1'],
-                        "Macro F1 Score": result['macro/f1'],})
-            acc = np.mean([result['micro/f1'], result['macro/f1']])
+                wandb.log({"Acc ({})".format(self.args.data): acc,
+                            "Kappa ({})".format(self.args.data): kappa,})
+            precision = np.mean([acc, kappa])
+
+        elif self.args.data == "TAOP":
+            acc = accuracy_score(gt_list, pred_list)
+            print(colored("Acc: ", "red"), acc)
+
+            if self.args.use_wandb:
+                wandb.log({"Acc ({})".format(self.args.data): acc,})
+            precision = acc
 
         elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
-            auc = roc_auc_score(gt_list, pred_list)
-            print(colored("AUC: ", "red") + str(auc))
+            auc, kappa, f1 = binary_metrics(gt_list, pred_list)
+            print(colored("AUC, Kappa, F1 Socre: ", "red"), (auc, kappa, f1))
             if self.args.use_wandb:
-                wandb.log({"AUC": auc})
-            acc = auc
+                wandb.log({
+                    "AUC ({})".format(self.args.data): auc,
+                    "Kappa ({})".format(self.args.data): kappa,
+                    "F1 Score ({})".format(self.args.data): f1,
+                })
+            precision = np.mean([auc, kappa, f1])
 
         terminal_msg("Validation finished!", "C")
-        return acc
+        return precision
 
 
 class Multi_Task_Trainer(object):
@@ -253,10 +262,9 @@ class Multi_Task_Trainer(object):
 
     def validate(self):
         self.model.args.mode = 'validate'
-        acc = []
-        all_acc = []
+        precision = []
+        all_precision = []
         print(colored('\n[Executing]', 'blue'), 'Start validating...')
-        threshold = 0.5
         dataloader_dict = self.args.data.split(", ")
 
         for roll in range(len(dataloader_dict)):
@@ -285,34 +293,57 @@ class Multi_Task_Trainer(object):
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
 
-            if valid_dataloader_name in ["ODIR-5K", "RFMiD", "DR+"]:
-                result = multi_label_metrics(pred_list, gt_list, threshold=0.5)
-                auc, kappa, flatten_auc, flatten_kappa = Multi_AUC_and_Kappa(pred_list, gt_list)
-                print(colored("AUC: ", "red") + str(flatten_auc) + colored(", Kappa: ", "red") + str(flatten_kappa))
-                print(colored("Avg AUC: ", "red") + str(auc) + colored(", Avg Kappa: ", "red") + str(kappa))
+            if valid_dataloader_name in ["ODIR-5K", "DR+", "RFMiD"]:
+                avg_auc, avg_kappa, avg_f1 = multi_label_metrics(gt_list, pred_list)
+                print(colored("Avg AUC, Avg Kappa, Avg F1 Socre: ", "red"), (avg_auc, avg_kappa, avg_f1))
                 
                 if self.args.use_wandb:
-                    wandb.log({"Avg AUC ({})".format(valid_dataloader_name): auc,
-                            "Avg Kappa ({})".format(valid_dataloader_name): kappa,
-                            "AUC ({})".format(valid_dataloader_name): flatten_auc,
-                            "Kappa ({})".format(valid_dataloader_name): flatten_kappa,})
-                            #"F1 Score ({})".format(valid_dataloader_name): result['micro/f1'],})
-                            # "Macro F1 Score": result['macro/f1'],
-                            #"Samples F1 Score": result['samples/f1'],})
-                acc = np.mean(np.mean([auc, kappa, result['micro/f1']]))
-                all_acc.append(acc)
+                    wandb.log({"Avg AUC ({})".format(valid_dataloader_name): avg_auc,
+                    "Avg Kappa ({})".format(valid_dataloader_name): avg_kappa,
+                    "Avg F1 Score ({})".format(valid_dataloader_name): avg_f1,
+                    })
+                
+                precision = np.mean(np.mean([avg_auc, avg_kappa, avg_f1]))
+                all_precision.append(precision)
 
-            elif valid_dataloader_name in ["TAOP", "APTOS", "Kaggle", "DDR", "PALM", "LAG", "AMD", "REFUGE"]:
-                result = single_label_metrics(pred_list, gt_list)
-                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
+            elif valid_dataloader_name in ["Kaggle", "APTOS", "DDR"]:
+                acc, kappa = single_label_metrics(gt_list, pred_list)
+                print(colored("Acc, Quadratic Weighted Kappa: ", "red"), (acc, kappa))
 
                 if self.args.use_wandb:
-                    wandb.log({"Accuracy ({})".format(valid_dataloader_name): result['micro/f1'],})
-                            #"Macro F1 Score ({})".format(valid_dataloader_name): result['macro/f1'],})
-                acc = np.mean([result['micro/f1']])
-                all_acc.append(acc)
+                    wandb.log({
+                    "Acc ({})".format(valid_dataloader_name): acc,
+                    "Kappa ({})".format(valid_dataloader_name): kappa,
+                    })
+                
+                precision = np.mean([acc, kappa])
+                all_precision.append(precision)
+            
+            elif valid_dataloader_name == "TAOP":
+                acc = accuracy_score(gt_list, pred_list)
+                print(colored("Acc: ", "red"), acc)
 
-        precision = np.array(all_acc).mean()
+                if self.args.use_wandb:
+                    wandb.log({"Acc ({})".format(valid_dataloader_name): acc})
+                
+                precision = acc
+                all_precision.append(precision)
+
+            elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+                auc, kappa, f1 = binary_metrics(gt_list, pred_list)
+                print(colored("AUC, Kappa, F1 Socre: ", "red"), (auc, kappa, f1))
+
+                if self.args.use_wandb:
+                    wandb.log({
+                    "AUC ({})".format(valid_dataloader_name): auc,
+                    "Kappa ({})".format(valid_dataloader_name): kappa,
+                    "F1 Score ({})".format(valid_dataloader_name): f1,
+                    })
+                
+                precision = np.mean([auc, kappa, f1])
+                all_precision.append(precision)
+
+        precision = np.array(all_precision).mean()
         terminal_msg("Validation finished!", "C")
 
         return precision

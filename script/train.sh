@@ -1,33 +1,41 @@
-# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data APTOS --batch_size 64 --save_freq 500 --valid_freq 1 --use_wandb --project APTOS > archive/logs/APTOS/baseline.log &
-# nohup python idea.py --data ODIR-5K --batch_size 160 --save_freq 50 --lr 3e-4 --valid_freq 1 --project ODIR-5K --use_wandb > logs/ODIR-5K.log
-# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data RFMiD --batch_size 160 --save_freq 50 --valid_freq 1 --use_wandb --project RFMiD --lr 5e-4 > logs/RFMiD.log
+#============================================Single Task============================================#
 
-# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --balanced_sampling --resume archive/checkpoints/Hard_Params/model_best.pth --project Hard-Params --multi_task --valid_freq 1 --epochs 400 --use_wandb --num_workers 8 > archive/logs/Hard_Params.log
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP" --use_wandb --project TAOP > archive/logs/TAOP/baseline.log &
 
-# nohup python idea.py --data DR+ --batch_size 128 --save_freq 500 --valid_freq 1 --use_wandb --project KaggleDR+ > archive/logs/DR+/balanced.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "APTOS" --use_wandb --project APTOS > archive/logs/APTOS/baseline.log &
 
-# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data Kaggle --batch_size 128 --save_freq 50 --valid_freq 1 --use_wandb --project Kaggle --lr 3e-4 > archive/logs/Kaggle/baseline_balanced.log
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DDR" --use_wandb --project DDR > archive/logs/DDR/baseline.log &
 
-#CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data DR+ --batch_size 128 --save_freq 500 --valid_freq 1 --project DR+ --lr 3e-4 --use_wandb --num_workers 8 > archive/logs/DR+/baseline.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "AMD" --use_wandb --project AMD > archive/logs/AMD/baseline.log &
 
-# python idea.py --data ODIR-5K --batch_size 128 --save_freq 50 --valid_freq 1 --project ODIR-5K
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "LAG" --use_wandb --project LAG > archive/logs/LAG/baseline.log &
 
-# CUDA_VISIBLE_DEVICES=1 python idea.py --data "ODIR-5K, RFMiD, DR+" --balanced_sampling  --project Hard-Params --multi_task --valid_freq 1 --epochs 400 --num_workers 8
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "PALM" --use_wandb --project PALM > archive/logs/PALM/baseline.log &
 
-# CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MMoE --multi_task --valid_freq 1 --epochs 400 --num_workers 8 --method MMoE --use_wandb > archive/logs/MMoE/unified.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "REFUGE" --use_wandb --project REFUGE > archive/logs/REFUGE/baseline.log &
 
-#=============================MoCo======================================#
-python main.py 
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K" --use_wandb --project ODIR-5K > archive/logs/ODIR-5K/baseline.log &
+
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "RFMiD" --use_wandb --project RFMiD > archive/logs/RFMiD/baseline.log &
+
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DR+" --use_wandb --project DR+ > archive/logs/DR+/baseline.log &
+
+#============================================Multi Task============================================#
+nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 1000 --num_workers 8 --use_wandb > archive/logs/HPS/baseline.log &
+
+nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project MTAN --method MTAN --multi_task --epochs 1000 --num_workers 8 --use_wandb > archive/logs/MTAN/baseline.log &
+
+
+
+#============================================Misc============================================#
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MMoE --use_wandb --batch_size 12 --batches 2000 > archive/logs/MMoE/unified.log & 
 
 nohup python idea.py --data "TAOP" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MMoE --use_wandb --batch_size 10 --batches 2000 > archive/logs/MMoE/unified.log & 
 
-nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project Hard-Params --balanced_sampling --method HPS --multi_task --valid_freq 1 --epochs 400 --use_wandb --num_workers 8 > archive/logs/Hard_Params/balanced.log
+nohup python idea.py --data "TAOP, APTOS, DDR, PALM, LAG, AMD, REFUGE, ODIR-5K, RFMiD, DR" --project HPS --method HPS --multi_task --valid_freq 1 --epochs 400 --use_wandb --preflight > archive/logs/HPS/baseline.log
 
 python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project CGC --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method CGC --batch_size 4 --batches 2000
-
-nohup python idea.py --data TAOP --batch_size 128 --save_freq 500 --valid_freq 1 --multi_gpus --use_wandb --project TAOP > logs/TAOP/baseline.log &
 
 python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project MTAN --multi_task --valid_freq 1 --lr 1e-6 --epochs 400 --method MTAN --batch_size 4 --batches 2000
 
@@ -36,24 +44,3 @@ nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "ODIR-5K, TAOP, RFMiD, APTOS, Kaggle, DR+" --project CGC --multi_task --valid_freq 1 --lr 1e-6 --epochs 4000 --use_wandb --method CGC --batch_size 16 --batches 1600 --resume archive/checkpoints/CGC/epoch_400.pth > archive/logs/CGC/unified.log &
 
 nohup python idea.py --data "TAOP, APTOS, DDR, PALM, LAG, AMD, REFUGE, ODIR-5K, RFMiD, DR+" --project MMoE --multi_task --valid_freq 1 --lr 1e-6 --epochs 2000 --use_wandb --method MMoE --batch_size 12 --batches 4000 > archive/logs/MMoE/unified.log &
-
-
-python idea.py --data "AMD"--project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --mode eval
-
-python idea.py --data "DDR" --project DDR --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --mode eval
-
-python idea.py --data "LAG" --project LAG --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128
-
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "PALM" --project PALM --valid_freq 1 --lr 1e-4 --epochs 200 --use_wandb --batch_size 128 > archive/logs/PALM/baseline.log &
-
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "REFUGE" --project REFUGE --valid_freq 1 --lr 1e-4 --epochs 200 --use_wandb --batch_size 128 > archive/logs/REFUGE/baseline.log &
-
-nohup python idea.py --data "LAG"  --project LAG --valid_freq 1 --lr 1e-4 --epochs 200 --use_wandb --batch_size 128 > archive/logs/LAG/baseline.log &
-
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "AMD" --project AMD --valid_freq 1 --lr 1e-4 --epochs 200 --use_wandb --batch_size 128 > archive/logs/AMD/baseline.log &
-
-python idea.py --data "TAOP, APTOS, DDR, PALM, LAG, AMD, REFUGE, ODIR-5K, RFMiD, DR+" --project DSelectK --multi_task --valid_freq 1 --lr 1e-4 --epochs 400 --method DSelectK --batch_size 12 --batches 2000
-
-python idea.py --data "AMD" --project AMD --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128 --resume "archive/checkpoints/AMD/model_best.pth"
-
-python idea.py --data "LAG"  --project LAG --valid_freq 1 --lr 1e-4 --epochs 200  --batch_size 128

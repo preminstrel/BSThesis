@@ -497,7 +497,7 @@ class ValidDataset(data.Dataset):
             self.data_root = '/mnt/data3_ssd/RetinalDataset/LAG/dataset/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'PALM':
-            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM//'
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         elif self.data == 'REFUGE':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/REFUGE/'

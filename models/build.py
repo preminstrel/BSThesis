@@ -106,14 +106,14 @@ class build_single_task_model(nn.Module):
         loss.backward()
         self.optimizer.step()
 
-class build_hard_param_share_model(nn.Module):
+class build_HPS_model(nn.Module):
     '''
     build hard params shared multi-task model
     '''
     def __init__(self, args):
-        super(build_hard_param_share_model, self).__init__()
+        super(build_HPS_model, self).__init__()
         self.encoder = Encoder()
-        type(self).__name__ = "Hard_Params"
+        type(self).__name__ = "HPS"
         self.args = args
         self.decoder = get_task_head(args.data)
         self.loss = get_task_loss(args.data)
@@ -140,21 +140,28 @@ class build_hard_param_share_model(nn.Module):
             self.add_module(str(i), self.decoder[i])
 
     def forward(self, img, head):
-        presentation = self.encoder(img)
-        pred = self.decoder[head](presentation)
-        return presentation, pred
+        representation = self.encoder(img)
+        pred = self.decoder[head](representation)
+        return representation, pred
 
     def process(self, img, gt, head):
-        presentation, pred = self(img, head)
+        representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
                 gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
             return pred, loss
 
         loss = self.loss[head](pred, gt)
@@ -229,13 +236,20 @@ class build_MMoE_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
                 gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
             return pred, loss
 
         loss = self.loss[head](pred, gt)
@@ -340,13 +354,20 @@ class build_CGC_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
                 gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
             return pred, loss
 
         loss = self.loss[head](pred, gt)
@@ -443,7 +464,7 @@ class build_MTAN_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
@@ -452,7 +473,16 @@ class build_MTAN_model(nn.Module):
             pred = torch.argmax(pred, dim = 1)
             return pred, loss
 
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+            return pred, loss
+
         loss = self.loss[head](pred, gt)
+
+        return pred, loss
 
         return pred, loss
     
@@ -557,13 +587,20 @@ class build_DSelectK_model(nn.Module):
         representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
-        if head in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:
                 gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
             loss = self.loss[head](pred, gt)
             pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
             return pred, loss
 
         loss = self.loss[head](pred, gt)
@@ -596,9 +633,112 @@ class build_DSelectK_model(nn.Module):
         else:
             return rep
 
+class build_LTB_model(nn.Module):
+    '''
+    build LTB multi-task model
+    '''
+    def __init__(self, args):
+        super(build_LTB_model, self).__init__()
+        type(self).__name__ = "LTB"
+        self.args = args
+        self.task_name = args.data.split(", ")
+        self.rep_grad = True
+        self.task_num = len(self.task_name)
+        self.epoch = 0
 
+        if self.rep_grad:
+            self.rep_tasks = {}
+            self.rep = {}
+        
+        self.decoder = get_task_head(args.data)
+        self.loss = get_task_loss(args.data)
+        self.device = get_device()
 
-#===============
+        self.encoder = nn.ModuleList([resnet50(pretrained=True) for _ in range(self.task_num)])
+        self.encoder = _transform_resnet_ltb(self.encoder, self.task_name, self.device)
+
+        num_params, num_trainable_params = count_parameters(self.encoder)
+
+        decoder_params = []
+
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            self.decoder[i].to(self.device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+    
+        self.add_module("encoder", self.encoder)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, inputs, head=None):
+        self.epoch += 1/self.args.batches
+        s_rep = self.encoder(inputs, self.epoch, self.args.epochs) #[5, batch, 2048, 7, 7]
+        same_rep = False
+        for tn, task in enumerate(self.task_name):
+            if head is not None and task != head:
+                continue
+            ss_rep = s_rep[tn] if isinstance(s_rep, list) else s_rep
+            ss_rep = self._prepare_rep(ss_rep, task, same_rep)
+        out = self.decoder[head](ss_rep)
+        return ss_rep, out
+
+    def process(self, img, gt, head):
+        representation, pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None):
+        loss.backward()
+        self.optimizer.step()
+
+    def get_share_params(self):
+        r"""Return the shared parameters of the model.
+        """
+        return self.encoder.parameters()
+
+    def zero_grad_share_params(self):
+        r"""Set gradients of the shared parameters to zero.
+        """
+        self.encoder.zero_grad()
+        
+    def _prepare_rep(self, rep, task, same_rep=None):
+        if self.rep_grad:
+            if not same_rep:
+                self.rep[task] = rep
+            else:
+                self.rep = rep
+            self.rep_tasks[task] = rep.detach().clone()
+            self.rep_tasks[task].requires_grad = True
+            return self.rep_tasks[task]
+        else:
+            return rep
+#========================================Parts of Model========================================#
 
 class _transform_resnet_MTAN(nn.Module):
     def __init__(self, resnet_network, task_name, device):
@@ -708,7 +848,7 @@ class _transform_resnet_ltb(nn.Module):
             alpha = torch.ones(6, self.task_num, self.task_num).to(self.device)
         else:
             tau = epochs/20 / np.sqrt(epoch+1) # tau decay
-            alpha = F.gumbel_softmax(self.alpha, dim=-1, tau=tau, hard=True)
+            alpha = nn.functional.gumbel_softmax(self.alpha, dim=-1, tau=tau, hard=True)
 
         ss_rep = {i: [0]*self.task_num for i in range(5)}
         for i in range(5): # i: layer idx

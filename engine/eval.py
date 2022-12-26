@@ -5,13 +5,13 @@ import sys
 import torch
 import numpy as np
 import random
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score
 import sklearn.metrics as metrics
 from termcolor import colored
 
 from utils.info import terminal_msg
 from utils.model import count_parameters, save_checkpoint, resume_checkpoint
-from utils.metrics import Multi_AUC_and_Kappa, multi_label_metrics, single_label_metrics
+from utils.metrics import multi_label_metrics, single_label_metrics, binary_metrics
 
 class Single_Task_Evaluation(object):
     def __init__(self, args, model, device, valid_dataloader=None):
@@ -56,25 +56,20 @@ class Single_Task_Evaluation(object):
             gt_list = np.array(gt_list)
             
         if self.args.data in ["ODIR-5K", "RFMiD", "DR+"]:
-            threshold = 0.5
-            # gt = gt_list.flatten()
-            # pr = pred_list.flatten()
-            # kappa = metrics.cohen_kappa_score(gt, pr>th)
-            # f1 = metrics.f1_score(gt, pr>th, average='micro')
-            # auc = metrics.roc_auc_score(gt, pr)
-            # print(colored("AUC: ", "red") + str(auc) + colored(", Kappa: ", "red") + str(kappa) + colored(", Micro F1 Score: ", "red") + str(f1))
+            avg_auc, avg_kappa, avg_f1 = multi_label_metrics(gt_list, pred_list)
+            print(colored("Avg AUC, Avg Kappa, Avg F1 Socre: ", "red"), (avg_auc, avg_kappa, avg_f1))
 
-            result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
-            print(colored("Avg AUC, Avg Kappa, AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
-            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+        elif self.args.data in ["Kaggle", "APTOS", "DDR"]:
+            acc, kappa = single_label_metrics(gt_list, pred_list)
+            print(colored("Acc, Quadratic Weighted Kappa: ", "red"), (acc, kappa))
 
-        elif self.args.data in ["TAOP", "Kaggle", "APTOS", "DDR"]:
-            result = single_label_metrics(pred_list, gt_list)
-            print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
+        elif self.args.data == "TAOP":
+            acc = accuracy_score(gt_list, pred_list)
+            print(colored("Acc: ", "red"), acc)
         
         elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
-            auc = roc_auc_score(gt_list, pred_list)
-            print(colored("AUC: ", "red") + str(auc))
+            auc, kappa, f1 = binary_metrics(gt_list, pred_list)
+            print(colored("AUC, Kappa, F1 Socre: ", "red"), (auc, kappa, f1))
 
         terminal_msg("Evaluation phase finished!", "C")
 
@@ -123,23 +118,23 @@ class Multi_Task_Evaluation(object):
 
                     pred_list.extend(pred)
                     gt_list.extend(gt)
-                    # print(gt)
-                    # print(pred)
-                    # exit()
                 pred_list = np.array(pred_list)
                 gt_list = np.array(gt_list)
                 
             if valid_dataloader_name in ["ODIR-5K", "DR+", "RFMiD"]:
-                result = multi_label_metrics(pred_list, gt_list, threshold=threshold)
-                print(colored("Avg AUC, Avg Kappa, AUC, Kappa: ", "red") + str(Multi_AUC_and_Kappa(pred_list, gt_list)))
-                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']) + colored(", Samples F1 Score: ", "red") + str(result['samples/f1']))
+                avg_auc, avg_kappa, avg_f1 = multi_label_metrics(gt_list, pred_list)
+                print(colored("Avg AUC, Avg Kappa, Avg F1 Socre: ", "red"), (avg_auc, avg_kappa, avg_f1))
 
-            elif valid_dataloader_name in ["TAOP", "Kaggle", "APTOS", "DDR"]:
-                result = single_label_metrics(pred_list, gt_list)
-                print(colored("Micro F1 Score: ", "red") + str(result['micro/f1']) + colored(", Macro F1 Score: ", "red") + str(result['macro/f1']))
+            elif valid_dataloader_name in ["Kaggle", "APTOS", "DDR"]:
+                acc, kappa = single_label_metrics(gt_list, pred_list)
+                print(colored("Acc, Quadratic Weighted Kappa: ", "red"), (acc, kappa))
+            
+            elif valid_dataloader_name == "TAOP":
+                acc = accuracy_score(gt_list, pred_list)
+                print(colored("Acc: ", "red"), acc)
         
             elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
-                auc = roc_auc_score(gt_list, pred_list)
-                print(colored("AUC: ", "red") + str(auc))
+                auc, kappa, f1 = binary_metrics(gt_list, pred_list)
+                print(colored("AUC, Kappa, F1 Socre: ", "red"), (auc, kappa, f1))
 
         terminal_msg("Evaluation phase finished!", "C")
