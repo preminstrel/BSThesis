@@ -92,6 +92,7 @@ class Multi_Task_Evaluation(object):
         self.eval()
     
     def eval(self):
+        score = []
         terminal_msg("Start Evaluation...")
         threshold = 0.5
         dataloader_dict = self.args.data.split(", ")
@@ -124,17 +125,21 @@ class Multi_Task_Evaluation(object):
             if valid_dataloader_name in ["ODIR-5K", "DR+", "RFMiD"]:
                 avg_auc, avg_kappa, avg_f1 = multi_label_metrics(gt_list, pred_list)
                 print(colored("Avg AUC, Avg Kappa, Avg F1 Socre: ", "red"), (avg_auc, avg_kappa, avg_f1))
+                score.append(np.mean([avg_auc, avg_kappa, avg_f1]))
 
             elif valid_dataloader_name in ["Kaggle", "APTOS", "DDR"]:
                 acc, kappa = single_label_metrics(gt_list, pred_list)
                 print(colored("Acc, Quadratic Weighted Kappa: ", "red"), (acc, kappa))
+                score.append(np.mean([acc, kappa]))
             
             elif valid_dataloader_name == "TAOP":
                 acc = accuracy_score(gt_list, pred_list)
                 print(colored("Acc: ", "red"), acc)
+                score.append(acc)
         
-            elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            elif valid_dataloader_name in ["AMD", "LAG", "PALM", "REFUGE"]:
                 auc, kappa, f1 = binary_metrics(gt_list, pred_list)
                 print(colored("AUC, Kappa, F1 Socre: ", "red"), (auc, kappa, f1))
-
+                score.append(np.mean([auc, kappa, f1]))
+        print("Final Score: ", np.array(score).mean())
         terminal_msg("Evaluation phase finished!", "C")

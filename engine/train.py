@@ -60,17 +60,15 @@ class Single_Task_Trainer(object):
 
         for epoch in range(self.start_epoch, self.epochs + 1):
             self.model.train()
+            scaler = torch.cuda.amp.GradScaler()
             for i, sample in enumerate(self.train_dataloader):
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
 
-                if self.args.multi_gpus:
-                    pred, loss = self.model.module.process(img, gt)
-                    self.model.module.backward(loss)
-                else:
+                with torch.cuda.amp.autocast():
                     pred, loss = self.model.process(img, gt)
-                    self.model.backward(loss)
+                    self.model.backward(loss, scaler)
 
                 # Determine approximate time left
                 batches_done = epoch * self.train_dataloader.__len__() + i
@@ -134,9 +132,9 @@ class Single_Task_Trainer(object):
             avg_auc, avg_kappa, avg_f1 = multi_label_metrics(gt_list, pred_list)
             print(colored("Avg AUC, Avg Kappa, Avg F1 Socre: ", "red"), (avg_auc, avg_kappa, avg_f1))
             if self.args.use_wandb:
-                wandb.log({"Avg AUC": avg_auc,
-                           "Avg Kappa": avg_kappa,
-                           "Avg F1 Score": avg_f1,})
+                wandb.log({"Avg AUC ({})".format(self.args.data): avg_auc,
+                           "Avg Kappa ({})".format(self.args.data): avg_kappa,
+                           "Avg F1 Score ({})".format(self.args.data): avg_f1,})
             precision = np.mean([avg_auc, avg_kappa, avg_f1])
 
         elif self.args.data in ["Kaggle", "APTOS", "DDR"]:
@@ -214,7 +212,7 @@ class Multi_Task_Trainer(object):
 
         for epoch in range(self.start_epoch, self.epochs + 1):
             self.model.train()
-
+            scaler = torch.cuda.amp.GradScaler()
             for batch in range(self.batches):
                 # weighted random select a dataset
                 roll = random.choices(data_dict)[0]
@@ -225,9 +223,9 @@ class Multi_Task_Trainer(object):
                 img = sample['image']
                 gt = sample['landmarks']
                 img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
-
-                pred, loss = self.model.process(img, gt, roll)
-                self.model.backward(loss)
+                with torch.cuda.amp.autocast():
+                    pred, loss = self.model.process(img, gt, roll)
+                    self.model.backward(loss, scaler)
 
                 # Determine approximate time left
                 batch_done = epoch * self.batches + batch
@@ -329,7 +327,7 @@ class Multi_Task_Trainer(object):
                 precision = acc
                 all_precision.append(precision)
 
-            elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            elif valid_dataloader_name in ["AMD", "LAG", "PALM", "REFUGE"]:
                 auc, kappa, f1 = binary_metrics(gt_list, pred_list)
                 print(colored("AUC, Kappa, F1 Socre: ", "red"), (auc, kappa, f1))
 
@@ -344,6 +342,9 @@ class Multi_Task_Trainer(object):
                 all_precision.append(precision)
 
         precision = np.array(all_precision).mean()
+        print(colored("Final Score: ", "red"), precision)
+        if self.args.use_wandb:
+            wandb.log({"Final Score": precision})
         terminal_msg("Validation finished!", "C")
 
         return precision

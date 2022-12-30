@@ -114,7 +114,7 @@ class Decoder_multi_classification(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
-        x = torch.sigmoid(x)
+        #x = torch.sigmoid(x)
         return x
 
 class Decoder_single_classification(nn.Module):
@@ -173,11 +173,11 @@ def get_task_head(data):
 def get_task_loss(data):
     loss = {}
     if "ODIR-5K" in data:
-        loss["ODIR-5K"] = nn.BCELoss()
+        loss["ODIR-5K"] = nn.BCEWithLogitsLoss()
     if "RFMiD" in data:
-        loss["RFMiD"] = nn.BCELoss()
+        loss["RFMiD"] = nn.BCEWithLogitsLoss()
     if "DR+" in data:
-        loss["DR+"] = nn.BCELoss()
+        loss["DR+"] = nn.BCEWithLogitsLoss()
     if "TAOP" in data:
         loss["TAOP"] = nn.CrossEntropyLoss()
     if "APTOS" in data:
@@ -185,13 +185,13 @@ def get_task_loss(data):
     if "Kaggle" in data:
         loss["Kaggle"] = nn.CrossEntropyLoss()
     if "AMD" in data:
-        loss["AMD"] = nn.BCELoss()
+        loss["AMD"] = nn.BCEWithLogitsLoss()
     if "DDR" in data:
         loss["DDR"] = nn.CrossEntropyLoss()
     if "LAG" in data:
-        loss["LAG"] = nn.BCELoss()
+        loss["LAG"] = nn.BCEWithLogitsLoss()
     if "PALM" in data:
-        loss["PALM"] = nn.BCELoss()
+        loss["PALM"] = nn.BCEWithLogitsLoss()
     if "REFUGE" in data:
-        loss["REFUGE"] = nn.BCELoss()
+        loss["REFUGE"] = nn.BCEWithLogitsLoss()
     return loss

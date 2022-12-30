@@ -57,15 +57,9 @@ class build_single_task_model(nn.Module):
             exit()
 
 
-        self.ODIR_5K_bce_loss = nn.BCELoss()
-
-        self.RFMiD_bce_loss = nn.BCELoss()
-
-        self.KaggleDR_bce_loss = nn.BCELoss()
-
         self.nll_loss = nn.CrossEntropyLoss()
 
-        self.binary_loss = nn.BCELoss()
+        self.binary_loss = nn.BCEWithLogitsLoss()
 
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()), lr=args.lr)
 
@@ -79,11 +73,11 @@ class build_single_task_model(nn.Module):
         pred = self(img)
         self.optimizer.zero_grad()
         if self.args.data == "ODIR-5K":
-            loss = self.ODIR_5K_bce_loss(pred, gt)
+            loss = self.binary_loss(pred, gt)
         elif self.args.data == "RFMiD":
-            loss = self.RFMiD_bce_loss(pred, gt)
+            loss = self.binary_loss(pred, gt)
         elif self.args.data == "DR+":
-            loss = self.KaggleDR_bce_loss(pred, gt)
+            loss = self.binary_loss(pred, gt)
         elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
@@ -102,9 +96,15 @@ class build_single_task_model(nn.Module):
             exit()
         return pred, loss
 
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
 class build_HPS_model(nn.Module):
     '''
@@ -168,9 +168,15 @@ class build_HPS_model(nn.Module):
 
         return pred, loss
 
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
 class build_MMoE_model(nn.Module):
     '''
@@ -256,9 +262,15 @@ class build_MMoE_model(nn.Module):
 
         return pred, loss
 
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
     def get_share_params(self):
         r"""Return the shared parameters of the model.
@@ -374,9 +386,15 @@ class build_CGC_model(nn.Module):
 
         return pred, loss
 
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
     def get_share_params(self):
         r"""Return the shared parameters of the model.
@@ -483,12 +501,16 @@ class build_MTAN_model(nn.Module):
         loss = self.loss[head](pred, gt)
 
         return pred, loss
-
-        return pred, loss
     
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
 class build_DSelectK_model(nn.Module):
     '''
@@ -607,9 +629,11 @@ class build_DSelectK_model(nn.Module):
 
         return pred, loss
 
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
 
     def get_share_params(self):
         r"""Return the shared parameters of the model.
@@ -713,9 +737,15 @@ class build_LTB_model(nn.Module):
 
         return pred, loss
 
-    def backward(self, loss = None):
-        loss.backward()
-        self.optimizer.step()
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
     def get_share_params(self):
         r"""Return the shared parameters of the model.

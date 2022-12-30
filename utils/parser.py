@@ -35,7 +35,9 @@ class ParserArgs(object):
         # data settings
         self.parser.add_argument("--data", type=str, default="TAOP")
         self.parser.add_argument("--image_size", type=int, default=224, help="image size")
-        self.parser.add_argument("--balanced_sampling", action="store_true", help="enable wandb")
+        self.parser.add_argument("--balanced_sampling", action="store_true", help="enable balanced sampling")
+        self.parser.add_argument("--preprocessed", action="store_true", help="enable preprocessed data")
+
 
         # multi-task learning
         self.parser.add_argument("--multi_task", action="store_true", help="enable multi-task")

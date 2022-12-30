@@ -39,7 +39,7 @@ def get_data_weights(args):
 #===========================================Transforms===============================================#
 
 def get_train_transforms(img_size):
-    '''
+    r'''
     resize (256)-> random crop (224) -> random filp -> color distortion -> GaussianBlur -> normalize
     '''
     transform = transforms.Compose([
@@ -57,7 +57,7 @@ def get_train_transforms(img_size):
     return transform
 
 def get_valid_transforms(img_size):
-    '''
+    r'''
     resize (224)-> normalize
     '''
     transform = transforms.Compose([
@@ -307,26 +307,26 @@ def get_batch(data):
     return batch
 
 def get_single_task_train_dataloader(args, train_transfrom, valid_transform):
-    train_dataset = TrainDataset(args.data, transform=train_transfrom)
-    valid_dataset = ValidDataset(args.data, transform=valid_transform)
+    train_dataset = TrainDataset(data=args.data, transform=train_transfrom, args=args)
+    valid_dataset = ValidDataset(data=args.data, transform=valid_transform, args=args)
 
     if args.balanced_sampling:
         if args.data in ["ODIR-5K", "RFMiD", "DR+"]:
             sampler = MultilabelBalancedRandomSampler(train_dataset.get_labels())
         elif args.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM"]:
             sampler = ImbalancedDatasetSampler(train_dataset)
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler, num_workers=args.num_workers)
     else:
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
-    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
+    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
     return train_dataloader, valid_dataloader
 
 #============================================Datasets================================================#
 
 class TrainDataset(data.Dataset):
-    """ 
+    r""" 
     Based on the args.data to choose the dataset for training:
 
     ODIR-5K: 6,307 samples
@@ -336,16 +336,18 @@ class TrainDataset(data.Dataset):
     TAOP: 3,000 samples
     APTOS: 3,295 samples
     Kaggle: 35,126 samples
-    AMD: 321 samples
     DDR: 6,835 samples
+
+    AMD: 321 samples
     LAG: 3,884 samples
     PALM: 641 samples
     REFUGE: 400 samples
     """
 
-    def __init__(self, data, transform=None):
+    def __init__(self, data, transform=None, args=None):
         self.transform = transform
         self.data = data
+        self.args = args
 
         if self.data == 'ODIR-5K':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/ODIR-5K/'
@@ -395,34 +397,64 @@ class TrainDataset(data.Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         if self.data == 'ODIR-5K':
-            img_path = os.path.join(self.data_root, 'train_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'train_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
         elif self.data == 'RFMiD':
-            img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'TAOP':
-            img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'APTOS':
-            img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'Kaggle':
             img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
         elif self.data == 'DR+':
-            index = str(self.landmarks_frame.iloc[idx, 0])
-            if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
-                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
-            elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
-                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
-                print('Cannot find img path (DR+)')
-                exit()
+                index = str(self.landmarks_frame.iloc[idx, 0])
+                if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
+                    img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
+                elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
+                    img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+                else:
+                    print('Cannot find img path (DR+)')
+                    exit()
         elif self.data == 'AMD':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'DDR':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'LAG':
-            img_path = os.path.join(self.data_root, 'train/', str(self.landmarks_frame.iloc[idx, 0]))
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
+            else:
+                img_path = os.path.join(self.data_root, 'train/', str(self.landmarks_frame.iloc[idx, 0]))
         elif self.data == 'PALM':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'REFUGE':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
             exit()
@@ -430,14 +462,6 @@ class TrainDataset(data.Dataset):
         img = self.load_image(img_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
         sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
-
-        # if self.data in ["ODIR-5K", "RFMiD", "DR+"]:
-        #     sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
-        # elif self.data in ["TAOP", "APTOS", "Kaggle", "AMD", "DDR", "LAG", "PALM", "REFUGE"]:
-        #     sample = {'image': img, 'landmarks': torch.tensor(landmarks).int()}
-        # else:
-        #     terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
-        #     exit()
 
         return sample
 
@@ -448,26 +472,28 @@ class TrainDataset(data.Dataset):
         return self.landmarks_frame.iloc[:,1:]
 
 class ValidDataset(data.Dataset):
-    """ 
+    r""" 
     Based on the args.data to choose the dataset for validation:
 
     ODIR-5K: 693 samples
     RFMiD: 640 samples
-    Kaggle: 5,721 samples
+    DR+: 5,722 samples
 
     TAOP: 297 samples
     APTOS: 367 samples
     Kaggle: 2,000 samples (for valid only)
-    AMD: 79 samples
     DDR: 2,733 samples
+    
+    AMD: 79 samples
     LAG: 970 samples
     PALM: 159 samples
     REFUGE: 400 samples
     """
 
-    def __init__(self, data, transform=None):
+    def __init__(self, data, transform=None, args=None):
         self.transform = transform
         self.data = data
+        self.args = args
 
         if self.data == 'ODIR-5K':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/ODIR-5K/'
@@ -504,7 +530,6 @@ class ValidDataset(data.Dataset):
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__init__)", "F")
-            exit()
                 
     def load_image(self, path):
         img = Image.open(path).convert('RGB')
@@ -517,34 +542,63 @@ class ValidDataset(data.Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         if self.data == 'ODIR-5K':
-            img_path = os.path.join(self.data_root, 'valid_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'valid_CLAHE/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'valid_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
         elif self.data == 'RFMiD':
-            img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'valid_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'TAOP':
-            img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'APTOS':
-            img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+            else:
+                img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'Kaggle':
             img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
         elif self.data == 'DR+':
-            index = str(self.landmarks_frame.iloc[idx, 0])
-            if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
-                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
-            elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
-                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
-                print('Cannot find img path (DR+)')
-                exit()
+                index = str(self.landmarks_frame.iloc[idx, 0])
+                if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
+                    img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
+                elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
+                    img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+                else:
+                    print('Cannot find img path (DR+)')
         elif self.data == 'AMD':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'DDR':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'LAG':
-            img_path = os.path.join(self.data_root, 'valid/', str(self.landmarks_frame.iloc[idx, 0]))
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'valid_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
+            else:
+                img_path = os.path.join(self.data_root, 'valid/', str(self.landmarks_frame.iloc[idx, 0]))
         elif self.data == 'PALM':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'REFUGE':
-            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            if self.args.preprocessed:
+                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            else:
+                img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__getitem__)", "F")
             exit()
