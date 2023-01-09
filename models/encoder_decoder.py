@@ -104,11 +104,11 @@ class Decoder_multi_classification(nn.Module):
     Multi label classification Decoder:
     AvgPool --> FC (Sigmoid)
     '''
-    def __init__(self, num_class=36):
+    def __init__(self, num_class, input):
         super(Decoder_multi_classification, self).__init__()
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(2048, num_class)
+        self.fc1 = nn.Linear(input, num_class)
 
     def forward(self, x):
         x = self.avgpool(x)
@@ -122,10 +122,10 @@ class Decoder_single_classification(nn.Module):
     Single label classification Decoder:
     AvgPool --> FC
     '''
-    def __init__(self, num_class=36):
+    def __init__(self, num_class, input):
         super(Decoder_single_classification, self).__init__()
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(2048, num_class)
+        self.fc1 = nn.Linear(input, num_class)
 
     def forward(self, x):
         x = self.avgpool(x)
@@ -133,40 +133,40 @@ class Decoder_single_classification(nn.Module):
         x = self.fc1(x)
         return x
 
-def get_task_head(data):
+def get_task_head(data, input=2048):
     decoder = {}
     if "ODIR-5K" in data:
-        decoder["ODIR-5K"] = Decoder_multi_classification(num_class = 8)
+        decoder["ODIR-5K"] = Decoder_multi_classification(num_class = 8, input=input)
         decoder["ODIR-5K"].__name__ = "ODIR-5K"
     if "RFMiD" in data:
-        decoder["RFMiD"] = Decoder_multi_classification(num_class = 29)
+        decoder["RFMiD"] = Decoder_multi_classification(num_class = 29, input=input)
         decoder["RFMiD"].__name__ = "RFMiD"
     if "DR+" in data:
-        decoder["DR+"] = Decoder_multi_classification(num_class = 28)
+        decoder["DR+"] = Decoder_multi_classification(num_class = 28, input=input)
         decoder["DR+"].__name__ = "DR+"
     if "TAOP" in data:
-        decoder["TAOP"] = Decoder_single_classification(num_class = 5)
+        decoder["TAOP"] = Decoder_single_classification(num_class = 5, input=input)
         decoder["TAOP"].__name__ = "TAOP"
     if "APTOS" in data:
-        decoder["APTOS"] = Decoder_single_classification(num_class = 5)
+        decoder["APTOS"] = Decoder_single_classification(num_class = 5, input=input)
         decoder["APTOS"].__name__ = "APTOS"
     if "Kaggle" in data:
-        decoder["Kaggle"] = Decoder_single_classification(num_class = 5)
+        decoder["Kaggle"] = Decoder_single_classification(num_class = 5, input=input)
         decoder["Kaggle"].__name__ = "Kaggle"
     if "AMD" in data:
-        decoder["AMD"] = Decoder_multi_classification(num_class = 1)
+        decoder["AMD"] = Decoder_multi_classification(num_class = 1, input=input)
         decoder["AMD"].__name__ = "AMD"
     if "DDR" in data:
-        decoder["DDR"] = Decoder_single_classification(num_class = 6)
+        decoder["DDR"] = Decoder_single_classification(num_class = 6, input=input)
         decoder["DDR"].__name__ = "DDR"
     if "LAG" in data:
-        decoder["LAG"] = Decoder_multi_classification(num_class = 1)
+        decoder["LAG"] = Decoder_multi_classification(num_class = 1, input=input)
         decoder["LAG"].__name__ = "LAG"
     if "PALM" in data:
-        decoder["PALM"] = Decoder_multi_classification(num_class = 1)
+        decoder["PALM"] = Decoder_multi_classification(num_class = 1, input=input)
         decoder["PALM"].__name__ = "PALM"
     if "REFUGE" in data:
-        decoder["REFUGE"] = Decoder_multi_classification(num_class = 1)
+        decoder["REFUGE"] = Decoder_multi_classification(num_class = 1, input=input)
         decoder["REFUGE"].__name__ = "REFUGE"
     return decoder
 

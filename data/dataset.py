@@ -159,27 +159,27 @@ def get_train_dataloader(args, transform):
 def get_valid_dataloader(args, transform):
     dataloaders = {}
     if "ODIR-5K" in args.data:
-        dataloaders["ODIR-5K"] = DataLoader(ValidDataset('ODIR-5K', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["ODIR-5K"] = DataLoader(ValidDataset('ODIR-5K', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "RFMiD" in args.data:
-        dataloaders["RFMiD"] = DataLoader(ValidDataset('RFMiD', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["RFMiD"] = DataLoader(ValidDataset('RFMiD', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "TAOP" in args.data:
-        dataloaders["TAOP"] = DataLoader(ValidDataset('TAOP', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["TAOP"] = DataLoader(ValidDataset('TAOP', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "APTOS" in args.data:
-        dataloaders["APTOS"] = DataLoader(ValidDataset('APTOS', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["APTOS"] = DataLoader(ValidDataset('APTOS', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "Kaggle" in args.data:
-        dataloaders["Kaggle"] = DataLoader(ValidDataset('Kaggle', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["Kaggle"] = DataLoader(ValidDataset('Kaggle', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "DR+" in args.data:
-        dataloaders["DR+"] = DataLoader(ValidDataset('DR+', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["DR+"] = DataLoader(ValidDataset('DR+', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "AMD" in args.data:
-        dataloaders["AMD"] = DataLoader(ValidDataset('AMD', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["AMD"] = DataLoader(ValidDataset('AMD', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "DDR" in args.data:
-        dataloaders["DDR"] = DataLoader(ValidDataset('DDR', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["DDR"] = DataLoader(ValidDataset('DDR', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "LAG" in args.data:
-        dataloaders["LAG"] = DataLoader(ValidDataset('LAG', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["LAG"] = DataLoader(ValidDataset('LAG', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "PALM" in args.data:
-        dataloaders["PALM"] = DataLoader(ValidDataset('PALM', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["PALM"] = DataLoader(ValidDataset('PALM', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     if "REFUGE" in args.data:
-        dataloaders["REFUGE"] = DataLoader(ValidDataset('REFUGE', transform), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
+        dataloaders["REFUGE"] = DataLoader(ValidDataset('REFUGE', transform, args=args), batch_size=args.batch_size, shuffle=True, pin_memory= True, num_workers=args.num_workers)
     assert dataloaders
     return dataloaders
 
@@ -188,7 +188,7 @@ def get_train_data(args, transform):
 
     if 'ODIR-5K' in args.data:
         data['ODIR-5K'] = {}
-        train_dataset = TrainDataset('ODIR-5K', transform)
+        train_dataset = TrainDataset('ODIR-5K', transform, args=args)
         if args.balanced_sampling:
             data['ODIR-5K']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=MultilabelBalancedRandomSampler(train_dataset.get_labels()), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -197,7 +197,7 @@ def get_train_data(args, transform):
     
     if 'RFMiD' in args.data:
         data['RFMiD'] = {}
-        train_dataset = TrainDataset('RFMiD', transform)
+        train_dataset = TrainDataset('RFMiD', transform, args=args)
         if args.balanced_sampling:
             data['RFMiD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=MultilabelBalancedRandomSampler(train_dataset.get_labels()), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -207,7 +207,7 @@ def get_train_data(args, transform):
     if 'DR+' in args.data:
         data['DR+'] = {}
         data['DR+'] = {}
-        train_dataset = TrainDataset('DR+', transform)
+        train_dataset = TrainDataset('DR+', transform, args=args)
         if args.balanced_sampling:
             data['DR+']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=MultilabelBalancedRandomSampler(train_dataset.get_labels()), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -216,7 +216,7 @@ def get_train_data(args, transform):
     
     if 'TAOP' in args.data:
         data['TAOP'] = {}
-        train_dataset = TrainDataset('TAOP', transform)
+        train_dataset = TrainDataset('TAOP', transform, args=args)
         if args.balanced_sampling:
             data['TAOP']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -225,7 +225,7 @@ def get_train_data(args, transform):
     
     if 'APTOS' in args.data:
         data['APTOS'] = {}
-        train_dataset = TrainDataset('APTOS', transform)
+        train_dataset = TrainDataset('APTOS', transform, args=args)
         if args.balanced_sampling:
             data['APTOS']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -234,7 +234,7 @@ def get_train_data(args, transform):
     
     if 'Kaggle' in args.data:
         data['Kaggle'] = {}
-        train_dataset = TrainDataset('Kaggle', transform)
+        train_dataset = TrainDataset('Kaggle', transform, args=args)
         if args.balanced_sampling:
             data['Kaggle']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -243,7 +243,7 @@ def get_train_data(args, transform):
     
     if 'AMD' in args.data:
         data['AMD'] = {}
-        train_dataset = TrainDataset('AMD', transform)
+        train_dataset = TrainDataset('AMD', transform, args=args)
         if args.balanced_sampling:
             data['AMD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -252,7 +252,7 @@ def get_train_data(args, transform):
     
     if 'DDR' in args.data:
         data['DDR'] = {}
-        train_dataset = TrainDataset('DDR', transform)
+        train_dataset = TrainDataset('DDR', transform, args=args)
         if args.balanced_sampling:
             data['DDR']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -261,7 +261,7 @@ def get_train_data(args, transform):
     
     if 'LAG' in args.data:
         data['LAG'] = {}
-        train_dataset = TrainDataset('LAG', transform)
+        train_dataset = TrainDataset('LAG', transform, args=args)
         if args.balanced_sampling:
             data['LAG']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -270,7 +270,7 @@ def get_train_data(args, transform):
     
     if 'RFMiD' in args.data:
         data['RFMiD'] = {}
-        train_dataset = TrainDataset('RFMiD', transform)
+        train_dataset = TrainDataset('RFMiD', transform, args=args)
         if args.balanced_sampling:
             data['RFMiD']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -279,7 +279,7 @@ def get_train_data(args, transform):
     
     if 'PALM' in args.data:
         data['PALM'] = {}
-        train_dataset = TrainDataset('PALM', transform)
+        train_dataset = TrainDataset('PALM', transform, args=args)
         if args.balanced_sampling:
             data['PALM']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -288,7 +288,7 @@ def get_train_data(args, transform):
     
     if 'REFUGE' in args.data:
         data['REFUGE'] = {}
-        train_dataset = TrainDataset('REFUGE', transform)
+        train_dataset = TrainDataset('REFUGE', transform, args=args)
         if args.balanced_sampling:
             data['REFUGE']['dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, sampler=ImbalancedDatasetSampler(train_dataset), pin_memory= True, num_workers=args.num_workers)
         else:
@@ -398,7 +398,7 @@ class TrainDataset(data.Dataset):
             idx = idx.tolist()
         if self.data == 'ODIR-5K':
             if self.args.preprocessed:
-                img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'train_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
         elif self.data == 'RFMiD':
@@ -420,7 +420,7 @@ class TrainDataset(data.Dataset):
             img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
         elif self.data == 'DR+':
             if self.args.preprocessed:
-                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
+                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
                 index = str(self.landmarks_frame.iloc[idx, 0])
                 if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
@@ -565,7 +565,7 @@ class ValidDataset(data.Dataset):
             img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
         elif self.data == 'DR+':
             if self.args.preprocessed:
-                img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
+                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
                 index = str(self.landmarks_frame.iloc[idx, 0])
                 if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):

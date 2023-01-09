@@ -218,14 +218,29 @@ class Multi_Task_Trainer(object):
                 roll = random.choices(data_dict)[0]
                 data = self.train_data[roll]
                 #print("\rSelect dataset {} in this batch".format(roll))
+
+                if self.args.accumulate:
+                    for i in range(10):
+                        sample = get_batch(data = data)
+                        img = sample['image']
+                        gt = sample['landmarks']
+                        img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
+                        with torch.cuda.amp.autocast():
+                            pred, loss = self.model.process(img, gt, roll)
+                            loss = loss / 10
+                            self.model.backward(loss, scaler)
+                    scaler.step(self.model.optimizer)
+                    scaler.update()
+                    self.model.optimizer.zero_grad()
                 
-                sample = get_batch(data = data)
-                img = sample['image']
-                gt = sample['landmarks']
-                img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
-                with torch.cuda.amp.autocast():
-                    pred, loss = self.model.process(img, gt, roll)
-                    self.model.backward(loss, scaler)
+                else:
+                    sample = get_batch(data = data)
+                    img = sample['image']
+                    gt = sample['landmarks']
+                    img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
+                    with torch.cuda.amp.autocast():
+                        pred, loss = self.model.process(img, gt, roll)
+                        self.model.backward(loss, scaler)
 
                 # Determine approximate time left
                 batch_done = epoch * self.batches + batch
@@ -235,10 +250,10 @@ class Multi_Task_Trainer(object):
 
                 # Print log
                 sys.stdout.write("\r[Epoch %d/%d] [Batch %d/%d] [loss: %f] ETA: %s" %
-                                 (epoch, self.epochs,
-                                  batch, self.batches,
-                                  loss.item(),
-                                  time_left))
+                                (epoch, self.epochs,
+                                batch, self.batches,
+                                loss.item(),
+                                time_left))
                 # wandb
                 if self.args.use_wandb:
                     wandb.log({"loss ({})".format(roll): loss.item()})
@@ -246,6 +261,8 @@ class Multi_Task_Trainer(object):
             # save best model
             if epoch % self.valid_freq == 0:
                 precision = self.validate()
+                if self.args.use_wandb:
+                    wandb.log({"epoch": epoch})
                 if precision > best_precision:
                     best_precision = precision
                     save_best = True

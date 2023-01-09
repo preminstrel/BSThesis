@@ -30,6 +30,7 @@ if __name__ == "__main__":
             model = build_HPS_model(args)
         elif args.method == "MMoE":
             model = build_MMoE_model(args)
+            #print(model)
         elif args.method == "CGC":
             model = build_CGC_model(args)
         elif args.method == "MTAN":
@@ -49,6 +50,7 @@ if __name__ == "__main__":
 
     if args.use_wandb:
         wandb.init(project= args.project)
+        wandb.watch(model)
 
     train_transfrom = get_train_transforms(224)
     valid_transform = get_valid_transforms(224)

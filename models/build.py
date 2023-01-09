@@ -9,7 +9,7 @@ import math
 
 from utils.info import terminal_msg, get_device
 from utils.model import count_parameters
-from models.resnet import resnet50
+from models.resnet import resnet50, resnet18
 
 class build_single_task_model(nn.Module):
     '''
@@ -199,7 +199,7 @@ class build_MMoE_model(nn.Module):
 
         self.input_size = np.array(3*224*224, dtype=int).prod()
         self.num_experts = 3 # num of shared experts
-        self.encoder = nn.ModuleList([resnet50(pretrained=True) for _ in range(self.num_experts)])
+        self.encoder = nn.ModuleList([resnet50(pretrained=False) for _ in range(self.num_experts)])
         self.gate_specific = nn.ModuleDict({task: nn.Sequential(nn.Linear(self.input_size, self.num_experts),
                                                                 nn.Softmax(dim=-1)) for task in self.task_name})
 
@@ -240,7 +240,7 @@ class build_MMoE_model(nn.Module):
 
     def process(self, img, gt, head):
         representation, pred = self(img, head)
-        self.optimizer.zero_grad()
+        # self.optimizer.zero_grad()
 
         if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
@@ -265,8 +265,8 @@ class build_MMoE_model(nn.Module):
     def backward(self, loss = None, scaler = None):
         if scaler is not None:            
             scaler.scale(loss).backward()
-            scaler.step(self.optimizer)
-            scaler.update()
+            # scaler.step(self.optimizer)
+            # scaler.update()
         else:
             terminal_msg("GradScaler is disabled!", "F")
             loss.backward()
@@ -389,12 +389,13 @@ class build_CGC_model(nn.Module):
     def backward(self, loss = None, scaler = None):
         if scaler is not None:            
             scaler.scale(loss).backward()
-            scaler.step(self.optimizer)
-            scaler.update()
+            # scaler.step(self.optimizer)
+            # scaler.update()
         else:
             terminal_msg("GradScaler is disabled!", "F")
             loss.backward()
             self.optimizer.step()
+
 
     def get_share_params(self):
         r"""Return the shared parameters of the model.
@@ -607,7 +608,7 @@ class build_DSelectK_model(nn.Module):
 
     def process(self, img, gt, head):
         representation, pred = self(img, head)
-        self.optimizer.zero_grad()
+        #self.optimizer.zero_grad()
 
         if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
             if gt.shape[0] == 1:
@@ -632,8 +633,12 @@ class build_DSelectK_model(nn.Module):
     def backward(self, loss = None, scaler = None):
         if scaler is not None:            
             scaler.scale(loss).backward()
-            scaler.step(self.optimizer)
-            scaler.update()
+            # scaler.step(self.optimizer)
+            # scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
 
     def get_share_params(self):
         r"""Return the shared parameters of the model.

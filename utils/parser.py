@@ -42,6 +42,7 @@ class ParserArgs(object):
         # multi-task learning
         self.parser.add_argument("--multi_task", action="store_true", help="enable multi-task")
         self.parser.add_argument("--method", type=str, default="HPS")
+        self.parser.add_argument("--accumulate", action="store_true")
 
     def get_args(self):
         args = self.parser.parse_args()
