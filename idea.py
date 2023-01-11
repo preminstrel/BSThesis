@@ -9,6 +9,7 @@ from models.build import build_single_task_model, build_HPS_model, build_MMoE_mo
 
 from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
+from engine.adapter_train import MTL_adapter
 
 from utils.info import terminal_msg, epic_start, get_device
 from utils.parser import ParserArgs
@@ -39,6 +40,8 @@ if __name__ == "__main__":
             model = build_DSelectK_model(args)
         elif args.method == "LTB":
             model = build_LTB_model(args)
+        elif args.method == "Adapter":
+            pass
         else:
             terminal_msg(f"Wrong mothod {args.method}", "F")
     else:
@@ -50,10 +53,10 @@ if __name__ == "__main__":
 
     if args.use_wandb:
         wandb.init(project= args.project)
-        wandb.watch(model)
+        #wandb.watch(model)
 
-    train_transfrom = get_train_transforms(224)
-    valid_transform = get_valid_transforms(224)
+    train_transfrom = get_train_transforms(args.image_size)
+    valid_transform = get_valid_transforms(args.image_size)
 
     if args.multi_task:
         terminal_msg("Processing the datasets for multi-task model", "E")
@@ -66,7 +69,10 @@ if __name__ == "__main__":
 
     if args.multi_task:
         if args.mode == 'train':
-            Multi_Task_Trainer(args, model, device, train_data, valid_dataloaders)
+            if args.method == "Adapter":
+                MTL_adapter(args, device, train_data, valid_dataloaders)
+            else:
+                Multi_Task_Trainer(args, model, device, train_data, valid_dataloaders)
         elif args.mode == 'eval':
             Multi_Task_Evaluation(args, model, device, valid_dataloaders)
 

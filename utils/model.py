@@ -68,6 +68,9 @@ def save_checkpoint(self, epoch, save_best=False):
                 if name == "experts_shared" or name == "gate_specific" or name == "experts_specific":
                     continue
                 state[name] = self.model.decoder[name].state_dict()
+
+        elif self.args.method == "Adapter":
+            state["model"] = self.model.state_dict()
         
         else:
             terminal_msg(f"Wrong method: {self.args.method}", "F")
@@ -126,6 +129,8 @@ def resume_checkpoint(self, resume_path):
                 if name == "experts_shared" or name == "gate_specific" or name == "experts_specific":
                     continue
                 self.model.decoder[name].load_state_dict(checkpoint[name])
+        elif self.args.method == "Adapter":
+            self.model.load_state_dict(checkpoint['model'])
     else:
         self.model.encoder.load_state_dict(checkpoint['encoder'])
         self.model.decoder.load_state_dict(checkpoint['decoder'])
