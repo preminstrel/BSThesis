@@ -21,10 +21,23 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+from torch.utils.data import ConcatDataset
+from torch.utils import data
+import os
+import numpy as np
+from PIL import Image
+import torch
+import random
+from torch.utils import data
+from torchvision.transforms import transforms
+import pandas as pd
+from torch.utils.data import DataLoader
 
 from data.dataset import TrainDataset, ValidDataset
+from data.dataset import get_data_weights, get_batch
 from utils.image import GaussianBlur, TwoCropsTransform
 from models.moco import MoCo
+
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -71,13 +84,14 @@ parser.add_argument('--dist-backend', default='nccl', type=str,
                     help='distributed backend')
 parser.add_argument('--seed', default=None, type=int,
                     help='seed for initializing training. ')
-parser.add_argument('--gpu', default=None, type=int,
+parser.add_argument('--gpu', default=None, type=list,
                     help='GPU id to use.')
 parser.add_argument('--multiprocessing-distributed', action='store_true',
                     help='Use multi-processing distributed training to launch '
                          'N processes per node, which has N GPUs. This is the '
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
+parser.add_argument('--data', default="TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+",)
 
 # moco specific configs:
 parser.add_argument('--moco-dim', default=128, type=int,
@@ -99,6 +113,7 @@ parser.add_argument('--cos', action='store_true',
 
 
 def main():
+    print('Jump into main...')
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -134,18 +149,14 @@ def main():
 
 
 def main_worker(gpu, ngpus_per_node, args):
+    print('Jump into main_worker...')
     args.gpu = gpu
-
-    # suppress printing if not master
-    if True and args.gpu != 0:
-        def print_pass(*args):
-            pass
-        builtins.print = print_pass
 
     if args.gpu is not None:
         print("Use GPU: {} for training".format(args.gpu))
 
     if True:
+        print('debug')
         if args.dist_url == "env://" and args.rank == -1:
             args.rank = int(os.environ["RANK"])
         if True:
@@ -234,7 +245,17 @@ def main_worker(gpu, ngpus_per_node, args):
             normalize
         ]
 
-    train_dataset = TrainDataset('Kaggle', transform = TwoCropsTransform(transforms.Compose(augmentation)))
+    all_dataset = []
+    data = "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+"
+    data_dict = data.split(", ") # ['ODIR-5K', 'TAOP', 'RFMiD']
+    for data in data_dict:
+        train_dataset = TrainDataset(data, transform = TwoCropsTransform(transforms.Compose(augmentation)))
+        all_dataset.append(train_dataset)
+        print(data, len(train_dataset))
+
+    train_dataset = ConcatDataset(all_dataset)
+    print("All Datasets:", len(ConcatDataset(all_dataset)))
+
 
     if args.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
@@ -243,7 +264,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler, drop_last=True)
+        num_workers=0, pin_memory=True, sampler=train_sampler, drop_last=True)
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -253,14 +274,14 @@ def main_worker(gpu, ngpus_per_node, args):
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, args)
 
-        if not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank % ngpus_per_node == 0):
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'arch': args.arch,
-                'state_dict': model.state_dict(),
-                'optimizer' : optimizer.state_dict(),
-            }, is_best=False, filename='checkpoint_{:04d}.pth.tar'.format(epoch))
+        if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
+            if (epoch + 1) % 10 == 0:
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'arch': args.arch,
+                    'state_dict': model.state_dict(),
+                    'optimizer' : optimizer.state_dict(),
+                }, is_best=False, filename='archive/checkpoints/pretrained/pretrained_resnet50_{:04d}.pth'.format(epoch))
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
@@ -278,12 +299,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
     model.train()
 
     end = time.time()
+
     for i, sample in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        images = sample['image']
-        gt = sample['landmarks']
+        images = sample
 
         images[0] = images[0].cuda(args.gpu, non_blocking=True)
         images[1] = images[1].cuda(args.gpu, non_blocking=True)
@@ -383,6 +404,127 @@ def accuracy(output, target, topk=(1,)):
 
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].contiguous().view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+
+class TrainDataset(data.Dataset):
+    r""" 
+    Based on the args.data to choose the dataset for training:
+
+    ODIR-5K: 6,307 samples
+    RFMiD: 1,920 samples
+    DR+: 51,491 samples
+
+    TAOP: 3,000 samples
+    APTOS: 3,295 samples
+    Kaggle: 35,126 samples
+    DDR: 6,835 samples
+
+    AMD: 321 samples
+    LAG: 3,884 samples
+    PALM: 641 samples
+    REFUGE: 400 samples
+    """
+
+    def __init__(self, data, transform=None, args=None):
+        self.transform = transform
+        self.data = data
+        self.args = args
+
+        if self.data == 'ODIR-5K':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/ODIR-5K/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'RFMiD':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/RFMiD/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'TAOP':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/TAOP-2021/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'APTOS':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/APTOS/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'Kaggle':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/Kaggle/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'trainLabels.csv')
+        elif self.data == 'DR+':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/KaggleDR+/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'AMD':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/Training400/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'DDR':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/DDR/DDR-dataset/DR_grading/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'LAG':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/LAG/dataset/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'PALM':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/iChallenge-PM/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'REFUGE':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/REFUGE/'
+            self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        else:
+            terminal_msg("Args.Data ({}) Error (From TrainDataset.__init__)".format(data), "F")
+            exit()
+                
+    def load_image(self, path):
+        image = Image.open(path).convert('RGB')
+
+        if self.transform is not None:
+            image = self.transform(image)
+        return image
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        if self.data == 'ODIR-5K':
+            img_path = os.path.join(self.data_root, 'train_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
+        elif self.data == 'RFMiD':
+            img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+        elif self.data == 'TAOP':
+            img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+        elif self.data == 'APTOS':
+            img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+        elif self.data == 'Kaggle':
+            img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
+        elif self.data == 'DR+':
+            index = str(self.landmarks_frame.iloc[idx, 0])
+            if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
+                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
+            elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
+                img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+            else:
+                print('Cannot find img path (DR+)')
+                exit()
+        elif self.data == 'AMD':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'DDR':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'LAG':
+            img_path = os.path.join(self.data_root, 'train/', str(self.landmarks_frame.iloc[idx, 0]))
+        elif self.data == 'PALM':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'REFUGE':
+            img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        else:
+            terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
+            exit()
+
+        img = self.load_image(img_path)
+        landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
+        #sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
+        sample = img
+
+        return sample
+
+    def __len__(self):
+       return len(self.landmarks_frame)
+
+    def get_labels(self):
+        return self.landmarks_frame.iloc[:,1:]
+
+if __name__ == '__main__':
+    main()

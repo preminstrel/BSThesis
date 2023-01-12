@@ -288,8 +288,8 @@ class SGD(torch.optim.Optimizer):
                 param_state = self.state[p]
                 siz = p.grad.size()
                 import numpy as np
-                config_task.decay3x3 = np.ones(10) * 0.0001
-                config_task.decay1x1 = np.ones(10) * 0.0001
+                config_task.decay3x3 = np.ones(10) * 0.00001
+                config_task.decay1x1 = np.ones(10) * 0.00001
                 if len(siz) > 3:
                     if siz[2] == 3:
                         weight_decay = config_task.decay3x3[config_task.task]

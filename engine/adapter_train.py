@@ -35,7 +35,7 @@ class MTL_adapter(object):
     def __init__(self, args, device, train_data=None, valid_dataloaders=None):
         
         data = "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+"
-        model = models.adapter.resnet50(data)
+        model = models.adapter.resnet26(data)
 
         self.args = args
         self.device = device
@@ -50,7 +50,7 @@ class MTL_adapter(object):
         self.valid_freq = self.args.valid_freq
         self.loss = models.adapter.get_task_loss(data=data)
 
-        self.optimizer = models.adapter.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=0.1, momentum=0.9, weight_decay=5.*0.0001)
+        self.optimizer = models.adapter.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=0.1, momentum=0.9, weight_decay=5.*0.00001)
 
         if self.args.resume:
             setattr(models, "ResNet", self.model)

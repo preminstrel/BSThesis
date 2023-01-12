@@ -611,3 +611,7 @@ class ValidDataset(data.Dataset):
 
     def __len__(self):
        return len(self.landmarks_frame)
+
+def merge_datasets(dataset, sub_dataset):
+    # samples
+    dataset.samples.extend(sub_dataset.samples)
