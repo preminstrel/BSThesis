@@ -104,7 +104,7 @@ class Decoder_multi_classification(nn.Module):
     Multi label classification Decoder:
     AvgPool --> FC (Sigmoid)
     '''
-    def __init__(self, num_class, input):
+    def __init__(self, num_class, input=2048):
         super(Decoder_multi_classification, self).__init__()
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -122,7 +122,7 @@ class Decoder_single_classification(nn.Module):
     Single label classification Decoder:
     AvgPool --> FC
     '''
-    def __init__(self, num_class, input):
+    def __init__(self, num_class, input=2048):
         super(Decoder_single_classification, self).__init__()
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc1 = nn.Linear(input, num_class)

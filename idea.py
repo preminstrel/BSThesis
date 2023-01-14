@@ -9,7 +9,7 @@ from models.build import build_single_task_model, build_HPS_model, build_MMoE_mo
 
 from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
-from engine.adapter_train import MTL_adapter
+from engine.adapter import MTL_adapter
 
 from utils.info import terminal_msg, epic_start, get_device
 from utils.parser import ParserArgs

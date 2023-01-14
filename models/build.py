@@ -18,6 +18,14 @@ class build_single_task_model(nn.Module):
     def __init__(self, args):
         super(build_single_task_model, self).__init__()
         self.encoder = Encoder()
+
+        # Finetune with fixed encoder
+        source = '/home/hssun/thesis/archive/checkpoints/HPS/baseline.pth'
+        checkpoint = torch.load(source)
+        self.encoder.load_state_dict(checkpoint['encoder'])
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+
         self.args = args
         if args.data == "ODIR-5K":
             self.decoder = Decoder_multi_classification(num_class = 8)
@@ -115,7 +123,7 @@ class build_HPS_model(nn.Module):
         #self.encoder = Encoder()
 
         self.encoder = resnet50(pretrained = True)
-        source = '/home/hssun/thesis/archive/checkpoints/pretrained/pretrained_resnet50_0019.pth'
+        source = '/home/hssun/thesis/archive/checkpoints/pretrained/pretrained_resnet50_0099.pth'
         terminal_msg("Loading checkpoint '{}'".format(source), "E")
         checkpoint = torch.load(source, map_location="cpu")
 

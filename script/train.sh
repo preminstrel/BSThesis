@@ -1,9 +1,11 @@
 #============================================Single Task============================================#
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP" --use_wandb --project TAOP > archive/logs/TAOP/preprocess.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP" --use_wandb --project TAOP --num_workers 1 > archive/logs/TAOP/finetune.log &
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "APTOS" --use_wandb --project APTOS > archive/logs/APTOS/baseline.log &
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "APTOS" --use_wandb --preprocessed --project APTOS > archive/logs/APTOS/preprocessed.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "APTOS" --use_wandb --project APTOS --num_workers 1 > archive/logs/APTOS/finetune.log &
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DDR" --use_wandb --project DDR > archive/logs/DDR/baseline.log &
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DDR" --use_wandb --preprocessed --project DDR > archive/logs/DDR/preprocessed.log &
@@ -32,7 +34,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DR+" --use_wandb --preproces
 #============================================Multi Task============================================#
 
 # HPS Model 23.6822M (23.6822M trainable)
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 1000 --num_workers 4 --use_wandb > archive/logs/HPS/pretrained.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 1000 --num_workers 4 --use_wandb > archive/logs/HPS/pretrained_epoch_100.log &
 
 # MTAN Model 73.3729M (73.3729M trainable)
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project MTAN --method MTAN --multi_task --epochs 1000 --num_workers 2 --use_wandb > archive/logs/MTAN/baseline.log &
@@ -49,14 +51,14 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, 
 # LTB Model 235.2551M (235.2551M trainable)
 CUDA_VISIBLE_DEVICES=1 python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project LTB --method LTB --multi_task --epochs 1000 --num_workers 2 --batch_size 32 --use_wandb > archive/logs/LTB/baseline.log &
 
-# LTB Model 235.2551M (235.2551M trainable)
+# Adapter Model 235.2551M (235.2551M trainable)
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 500 --num_workers 4 --batch_size 128 --use_wandb > archive/logs/Adapter/series_adapters.log &
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 500 --num_workers 4 --batch_size 128 --use_wandb > archive/logs/Adapter/parallel_adapters.log &
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 5000 --num_workers 4 --batch_size 128 --image_size 64> archive/logs/Adapter/parallel_adapters_64x64.log &
 
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 300 --num_workers 4 --batch_size 100 --use_wandb > archive/logs/Adapter/parallel_adapters_new.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 300 --num_workers 4 --batch_size 128 --use_wandb > archive/logs/Adapter/my_adapters.log &
 
 #============================================Pretrained ResNet50============================================#
 
