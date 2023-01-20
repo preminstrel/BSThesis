@@ -33,7 +33,7 @@ from torchvision.transforms import transforms
 import pandas as pd
 from torch.utils.data import DataLoader
 
-from data.dataset import TrainDataset, ValidDataset
+from data.dataset import ValidDataset
 from data.dataset import get_data_weights, get_batch
 from utils.image import GaussianBlur, TwoCropsTransform
 from models.moco import MoCo

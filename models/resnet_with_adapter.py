@@ -106,7 +106,7 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         adapter_out = self.adapter[config_task.task](out)
-        out = (self.conv2(out) + adapter_out)/2
+        out = (self.conv2(out) + adapter_out)
 
 
         out = self.bn2(out)

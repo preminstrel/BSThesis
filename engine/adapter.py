@@ -35,8 +35,85 @@ class MTL_adapter(object):
     def __init__(self, args, device, train_data=None, valid_dataloaders=None):
         
         data = "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+"
-        model = models.resnet_with_adapter.resnet50(pretrained=True)
+        model = models.resnet_with_adapter.resnet50()
+
+        checkpoint = torch.load('/home/hssun/thesis/archive/checkpoints/HPS/baseline.pth')
+
+        state_dict = checkpoint['encoder']
+        for k in list(state_dict.keys()):
+            # retain resnet
+            if k.startswith('resnet'):
+                if k == "resnet.0.weight":
+                    state_dict['conv1.weight'] = state_dict[k]
+                elif k == "resnet.1.weight":
+                    state_dict['bn1.weight'] = state_dict[k]
+                elif k == "resnet.1.bias":
+                    state_dict['bn1.bias'] = state_dict[k]
+                elif k == "resnet.1.running_mean":
+                    state_dict['bn1.running_mean'] = state_dict[k]
+                elif k == "resnet.1.running_var":
+                    state_dict['bn1.running_var'] = state_dict[k]
+                elif k == "resnet.1.num_batches_tracked":
+                    state_dict['bn1.num_batches_tracked'] = state_dict[k]
+                elif str(k[len("resnet.4")-1]) == '4':
+                    state_dict["layer1"+k[len("resnet.")+1:]] = state_dict[k]
+                    # print("layer1"+k[len("resnet.")+1:])
+                elif str(k[len("resnet.5")-1]) == '5':
+                    state_dict["layer2"+k[len("resnet.")+1:]] = state_dict[k]
+                    # print("layer1"+k[len("resnet.")+1:])
+                elif str(k[len("resnet.6")-1]) == '6':
+                    state_dict["layer3"+k[len("resnet.")+1:]] = state_dict[k]
+                    # print("layer1"+k[len("resnet.")+1:])
+                elif str(k[len("resnet.7")-1]) == '7':
+                    state_dict["layer4"+k[len("resnet.")+1:]] = state_dict[k]
+                    # print("layer1"+k[len("resnet.")+1:])
+                else:
+                    print(k)
+
+            # delete renamed or unused k
+            del state_dict[k]
+            state_dict['0.fc1.weight'] = checkpoint['TAOP']['fc1.weight']
+            state_dict['0.fc1.bias'] = checkpoint['TAOP']['fc1.bias']
+            state_dict['1.fc1.weight'] = checkpoint['APTOS']['fc1.weight']
+            state_dict['1.fc1.bias'] = checkpoint['APTOS']['fc1.bias']
+            state_dict['2.fc1.weight'] = checkpoint['DDR']['fc1.weight']
+            state_dict['2.fc1.bias'] = checkpoint['DDR']['fc1.bias']
+            state_dict['3.fc1.weight'] = checkpoint['AMD']['fc1.weight']
+            state_dict['3.fc1.bias'] = checkpoint['AMD']['fc1.bias']
+            state_dict['4.fc1.weight'] = checkpoint['LAG']['fc1.weight']
+            state_dict['4.fc1.bias'] = checkpoint['LAG']['fc1.bias']
+            state_dict['5.fc1.weight'] = checkpoint['PALM']['fc1.weight']
+            state_dict['5.fc1.bias'] = checkpoint['PALM']['fc1.bias']
+            state_dict['6.fc1.weight'] = checkpoint['REFUGE']['fc1.weight']
+            state_dict['6.fc1.bias'] = checkpoint['REFUGE']['fc1.bias']
+            state_dict['7.fc1.weight'] = checkpoint['ODIR-5K']['fc1.weight']
+            state_dict['7.fc1.bias'] = checkpoint['ODIR-5K']['fc1.bias']
+            state_dict['8.fc1.weight'] = checkpoint['RFMiD']['fc1.weight']
+            state_dict['8.fc1.bias'] = checkpoint['RFMiD']['fc1.bias']
+            state_dict['9.fc1.weight'] = checkpoint['DR+']['fc1.weight']
+            state_dict['9.fc1.bias'] = checkpoint['DR+']['fc1.bias']
+
+        # for i in list(state_dict.keys()):
+        #     print(i)
+        model.load_state_dict(state_dict, strict=False)
+        for key in model.state_dict().keys():
+            if "adapter" in key:
+                model.state_dict()[key].data.zero_()
+
+        for name, param in model.named_parameters():
+            if "adapter" not in name and "fc" not in name:
+                param.requires_grad = False
+                #print(name)
+        # for layer in model.children():
+        #     for parameter in layer.parameters():
+        #         print(layer)
+        #         parameter.requires_grad = True
+        #         #print(model.state_dict()[key].requires_grad)
+        #         #exit()
+        #         #model.state_dict()[key].requires_grad = False
         terminal_msg(f"Loaded pretrained model", "C")
+        num_params, num_trainable_params = count_parameters(model)
+        terminal_msg(f"Params in {type(model).__name__}: {num_params / 1e6:.4f}M ({num_trainable_params / 1e6:.4f}M trainable). "+"Start training...", 'E')
 
         self.args = args
         self.device = device
@@ -49,9 +126,9 @@ class MTL_adapter(object):
         self.batches = self.args.batches
         self.save_freq = self.args.save_freq
         self.valid_freq = self.args.valid_freq
-        self.loss = models.resnet_with_adapter.get_task_loss(data=data)
+        self.loss = models.resnet_with_adapter.get_task_loss(data=data) 
 
-        self.optimizer = torch.optim.Adam(list(self.model.parameters()), lr=args.lr, betas=(0.5, 0.999))
+        self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=args.lr, betas=(0.5, 0.999))
 
         if self.args.resume:
             resume_checkpoint(self, self.args.resume)

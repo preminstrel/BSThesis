@@ -58,7 +58,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, 
 
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 5000 --num_workers 4 --batch_size 128 --image_size 64> archive/logs/Adapter/parallel_adapters_64x64.log &
 
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 300 --num_workers 4 --batch_size 128 --use_wandb > archive/logs/Adapter/my_adapters.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project Adapter --method Adapter --multi_task --epochs 1000 --batches 300 --num_workers 4 --batch_size 128 --use_wandb > archive/logs/Adapter/my_adapters_freeze.log &
 
 #============================================Pretrained ResNet50============================================#
 

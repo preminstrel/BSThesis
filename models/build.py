@@ -10,6 +10,7 @@ import math
 from utils.info import terminal_msg, get_device
 from utils.model import count_parameters
 from models.resnet import resnet50, resnet18
+from models.resnet_ca import resnet50_ca
 
 class build_single_task_model(nn.Module):
     '''
@@ -122,23 +123,25 @@ class build_HPS_model(nn.Module):
         super(build_HPS_model, self).__init__()
         #self.encoder = Encoder()
 
-        self.encoder = resnet50(pretrained = True)
-        source = '/home/hssun/thesis/archive/checkpoints/pretrained/pretrained_resnet50_0099.pth'
-        terminal_msg("Loading checkpoint '{}'".format(source), "E")
-        checkpoint = torch.load(source, map_location="cpu")
+        self.encoder = resnet50_ca(pretrained = True)
+        
+        '''Below is for pretrained model'''
+        # source = '/home/hssun/thesis/archive/checkpoints/pretrained/pretrained_resnet50_0199.pth'
+        # terminal_msg("Loading checkpoint '{}'".format(source), "E")
+        # checkpoint = torch.load(source, map_location="cpu")
 
-        # rename moco pre-trained keys
-        state_dict = checkpoint['state_dict']
-        for k in list(state_dict.keys()):
-            # retain only encoder_q up to before the embedding layer
-            if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
-                # remove prefix
-                state_dict[k[len("module.encoder_q."):]] = state_dict[k]
-            # delete renamed or unused k
-            del state_dict[k]
+        # # rename moco pre-trained keys
+        # state_dict = checkpoint['state_dict']
+        # for k in list(state_dict.keys()):
+        #     # retain only encoder_q up to before the embedding layer
+        #     if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
+        #         # remove prefix
+        #         state_dict[k[len("module.encoder_q."):]] = state_dict[k]
+        #     # delete renamed or unused k
+        #     del state_dict[k]
 
-        msg = self.encoder.load_state_dict(state_dict, strict=False)
-        terminal_msg("Loaded pre-trained model '{}'".format(source), "C")
+        # msg = self.encoder.load_state_dict(state_dict, strict=False)
+        # terminal_msg("Loaded pre-trained model '{}'".format(source), "C")
         
         type(self).__name__ = "HPS"
         self.args = args
