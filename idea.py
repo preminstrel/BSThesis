@@ -7,7 +7,7 @@ import os
 
 from models.build import build_single_task_model, build_HPS_model, build_MMoE_model, build_CGC_model, build_MTAN_model, build_DSelectK_model, build_LTB_model
 
-from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed
+from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed, Multi_Task_Trainer_v2
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
 from engine.adapter import MTL_adapter
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             if args.method == "Adapter":
                 MTL_adapter(args, device, train_data, valid_dataloaders)
             else:
-                Multi_Task_Trainer(args, model, device, train_data, valid_dataloaders)
+                Multi_Task_Trainer_v2(args, model, device, train_data, valid_dataloaders)
         elif args.mode == 'eval':
             Multi_Task_Evaluation(args, model, device, valid_dataloaders)
 

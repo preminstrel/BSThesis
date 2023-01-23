@@ -121,9 +121,9 @@ class build_HPS_model(nn.Module):
     '''
     def __init__(self, args):
         super(build_HPS_model, self).__init__()
-        #self.encoder = Encoder()
+        self.encoder = Encoder()
 
-        self.encoder = resnet50_ca(pretrained = True)
+        #self.encoder = resnet50_ca(pretrained = True)
         
         '''Below is for pretrained model'''
         # source = '/home/hssun/thesis/archive/checkpoints/pretrained/pretrained_resnet50_0199.pth'
@@ -199,7 +199,7 @@ class build_HPS_model(nn.Module):
         return pred, loss
 
     def backward(self, loss = None, scaler = None):
-        if scaler is not None:            
+        if scaler is not None:
             scaler.scale(loss).backward()
             scaler.step(self.optimizer)
             scaler.update()
