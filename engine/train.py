@@ -439,6 +439,7 @@ class Multi_Task_Trainer_v2(object):
                 '''
                 
                 # GradVac
+                '''
                 grad_index = []
                 for param in self.model.encoder.parameters():
                     grad_index.append(param.data.numel())
@@ -506,7 +507,89 @@ class Multi_Task_Trainer_v2(object):
                     count += 1
                 
                 self.model.optimizer.step()
+                '''
 
+                # CAGrad
+                grad_index = []
+                for param in self.model.encoder.parameters():
+                    grad_index.append(param.data.numel())
+                grad_dim = sum(grad_index)
+
+                all_loss = 0
+                losses = {}
+
+                for roll in data_dict:
+                    data = self.train_data[roll]
+
+                    sample = get_batch(data = data)
+                    img = sample['image']
+                    gt = sample['landmarks']
+                    img, gt = img.to(self.device, non_blocking=True), gt.to(self.device, non_blocking=True)
+
+                    pred, loss = self.model.process(img, gt, roll)
+                    #loss = loss / 10
+                    losses[roll] = loss
+                    all_loss += loss.item()
+                    
+                    grads = torch.zeros(10, grad_dim).to('cuda')
+
+                for i in data_dict:
+                    losses[i].backward(losses[i].clone().detach(), retain_graph=True) if i!='DR+' else losses[i].backward(losses[i].clone().detach())
+                    
+                    grad = torch.zeros(grad_dim)
+                    count = 0
+                    for param in self.model.encoder.parameters():
+                        if param.grad is not None:
+                            beg = 0 if count == 0 else sum(grad_index[:count])
+                            end = sum(grad_index[:(count+1)])
+                            grad[beg:end] = param.grad.data.view(-1)
+                        count += 1
+                    grads[data_dict.index(i)] = grad
+                    self.model.encoder.zero_grad()
+                
+                calpha=0.5
+                rescale=1
+                from scipy.optimize import minimize
+
+                GG = torch.matmul(grads, grads.t()).cpu() # [num_tasks, num_tasks]
+                g0_norm = (GG.mean()+1e-8).sqrt() # norm of the average gradient
+
+                x_start = np.ones(10) / 10
+                bnds = tuple((0,1) for x in x_start)
+                cons=({'type':'eq','fun':lambda x:1-sum(x)})
+                A = GG.numpy()
+                b = x_start.copy()
+                c = (calpha*g0_norm+1e-8).item()
+                def objfn(x):
+                    return (x.reshape(1,-1).dot(A).dot(b.reshape(-1,1))+c*np.sqrt(x.reshape(1,-1).dot(A).dot(x.reshape(-1,1))+1e-8)).sum()
+                res = minimize(objfn, x_start, bounds=bnds, constraints=cons)
+                w_cpu = res.x
+                ww = torch.Tensor(w_cpu).to('cuda')
+                gw = (grads * ww.view(-1, 1)).sum(0)
+                gw_norm = gw.norm()
+                lmbda = c / (gw_norm+1e-8)
+                g = grads.mean(0) + lmbda * gw
+                if rescale == 0:
+                    new_grads = g
+                elif rescale == 1:
+                    new_grads = g / (1+calpha**2)
+                elif rescale == 2:
+                    new_grads = g / (1 + calpha)
+                else:
+                    raise ValueError('No support rescale type {}'.format(rescale))
+
+                
+                # reset grad
+                count = 0
+                for param in self.model.encoder.parameters():
+                    if param.grad is not None:
+                        beg = 0 if count == 0 else sum(grad_index[:count])
+                        end = sum(grad_index[:(count+1)])
+                        param.grad.data = new_grads[beg:end].contiguous().view(param.data.size()).data.clone()
+                    count += 1
+                
+                self.model.optimizer.step()
+                self.model.optimizer.zero_grad()
 
                 # Determine approximate time left
                 batch_done = epoch * self.batches + batch
