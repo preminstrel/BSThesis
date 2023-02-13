@@ -48,3 +48,14 @@ def epic_start(project_name, env="requirements.txt"):
     for element in content_list:
         converted_list.append(element.strip())
     print(converted_list)
+
+def pretty_print(*values):
+    col_width = 13
+
+    def format_val(v):
+        if not isinstance(v, str):
+            v = np.array2string(v, precision=5, floatmode='fixed')
+        return v.ljust(col_width)
+
+    str_values = [format_val(v) for v in values]
+    print("   ".join(str_values))

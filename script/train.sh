@@ -36,6 +36,8 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DR+" --use_wandb --preproces
 # HPS Model 23.6822M (23.6822M trainable)
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 100 --num_workers 2 --batch_size 13 --use_wandb  > archive/logs/HPS/baseline_v2_CAGrad.log &
 
+CUDA_VISIBLE_DEVICES=1 python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 100 --num_workers 2 --batch_size 13
+
 # MTAN Model 73.3729M (73.3729M trainable)
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project MTAN --method MTAN --multi_task --epochs 1000 --num_workers 2 --use_wandb > archive/logs/MTAN/baseline.log &
 

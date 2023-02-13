@@ -121,7 +121,7 @@ class build_HPS_model(nn.Module):
     '''
     def __init__(self, args):
         super(build_HPS_model, self).__init__()
-        self.encoder = Encoder()
+        self.encoder = resnet50(pretrained=True)
 
         #self.encoder = resnet50_ca(pretrained = True)
         
@@ -187,7 +187,7 @@ class build_HPS_model(nn.Module):
             pred = torch.argmax(pred, dim = 1)
             return pred, loss
 
-        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
             pred = pred[:, 0]
             gt = gt[:, 0]
             #print(pred, gt)
