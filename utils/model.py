@@ -42,6 +42,19 @@ def save_checkpoint(self, epoch, save_best=False):
                 if name == "encoder":
                     continue
                 state[name] = self.model.decoder[name].state_dict()
+        elif self.args.method == "HPS_v3":
+            state["encoder"] = self.model.encoder.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "discriminator" or name == "kl_loss":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
+        
+        elif self.args.method == "HPS_v4":
+            state["encoder"] = self.model.encoder.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "adver_loss" or name == "discriminator":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
 
         elif self.args.method == "MMoE":
             state["encoder"] = self.model.encoder.state_dict()

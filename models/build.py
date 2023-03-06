@@ -1,6 +1,6 @@
 from ast import arg
 from json import decoder
-from .encoder_decoder import Encoder, Decoder_multi_classification, Decoder_single_classification
+from .encoder_decoder import Encoder, Decoder_multi_classification, Decoder_single_classification, Discriminator
 from .encoder_decoder import get_task_head, get_task_loss
 import torch.nn as nn
 import torch
@@ -121,7 +121,10 @@ class build_HPS_model(nn.Module):
     '''
     def __init__(self, args):
         super(build_HPS_model, self).__init__()
-        self.encoder = resnet50(pretrained=True)
+        self.encoder = Encoder()
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth')
+        self.encoder.load_state_dict(ckpt['encoder'])
+        #self.encoder = resnet50(pretrained=True)
 
         #self.encoder = resnet50_ca(pretrained = True)
         
@@ -207,6 +210,261 @@ class build_HPS_model(nn.Module):
             terminal_msg("GradScaler is disabled!", "F")
             loss.backward()
             self.optimizer.step()
+
+class build_HPS_model_with_Domain_Discriminator(nn.Module):
+    '''
+    build hard params shared multi-task model
+    '''
+    def __init__(self, args):
+        super(build_HPS_model_with_Domain_Discriminator, self).__init__()
+        self.encoder = Encoder()
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth')
+        self.encoder.load_state_dict(ckpt['encoder'])
+        type(self).__name__ = "HPS_v3"
+        self.args = args
+        self.decoder = get_task_head(args.data)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+
+        # For domain adversarial learning
+        self.discriminator = Discriminator()
+        self.kl_loss = nn.KLDivLoss(reduction='batchmean')
+
+        self.encoder.to(device)
+        num_params, num_trainable_params = count_parameters(self.encoder)
+
+        decoder_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+        self.d_optimizer = torch.optim.Adam(list(self.discriminator.parameters()), lr=1e-5, betas=(0.5, 0.999))
+
+        self.add_module("encoder", self.encoder)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, img, head):
+        representation = self.encoder(img)
+        pred = self.decoder[head](representation)
+        domain = self.discriminator(representation)
+        return domain, pred, representation
+
+    def process(self, img, gt, head):
+        # Train Encoder and Decoders
+        self.optimizer.zero_grad()
+        domain, pred, representation= self(img, head)
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+        else:
+            loss = self.loss[head](pred, gt)
+        valid = torch.ones(img.shape[0], 10, requires_grad=False).cuda()/10
+        g_loss = self.kl_loss(domain.softmax(dim=-1).log(), valid)
+        g_loss = g_loss*0.05
+        loss_all = loss + g_loss
+        #self.backward(loss_all, scaler)
+        loss_all.backward()
+        self.optimizer.step()
+        
+        # Train discriminator
+        self.d_optimizer.zero_grad()
+        domain = self.discriminator(representation.detach())
+        #domain, pred = self(img, head)
+        data = "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+"
+        data_list = data.split(', ')
+        encoding = torch.zeros(img.shape[0], 10, requires_grad=False).cuda()
+        encoding[:, data_list.index(head)] = 1
+        d_loss = self.kl_loss(domain.softmax(dim=-1).log(), encoding)
+        d_loss = d_loss
+        # print(domain.softmax(dim=-1)[0], encoding[0], valid[0], d_loss, g_loss)
+        # exit()
+        #self.backward(d_loss, scaler)
+        d_loss.backward()
+        self.d_optimizer.step()
+
+        return pred, loss, g_loss, d_loss
+    
+    def process_without_grad(self, img, gt, head):
+        # Train Encoder and Decoders
+        domain, pred, _ = self(img, head)
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+        else:
+            loss = self.loss[head](pred, gt)
+
+
+        return pred
+    
+    def backward(self, loss, scaler):
+        scaler.scale(loss).backward()
+        scaler.step(self.optimizer)
+        scaler.update()
+
+class build_HPS_model_with_Multiple_Domain_Discriminator(nn.Module):
+    '''
+    build hard params shared multi-task model with multiple domain discriminator
+    '''
+    def __init__(self, args):
+        super(build_HPS_model_with_Multiple_Domain_Discriminator, self).__init__()
+        self.encoder = Encoder()
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth')
+        self.encoder.load_state_dict(ckpt['encoder'])
+        type(self).__name__ = "HPS_v4"
+        self.args = args
+        self.decoder = get_task_head(args.data)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+
+        # For domain adversarial learning
+        self.discriminator = {}
+        self.adver_loss = nn.BCELoss()
+        for i in args.data.split(', '):
+            self.discriminator[i] = Discriminator(input=2048, output=1)
+
+        self.encoder.to(device)
+        num_params, num_trainable_params = count_parameters(self.encoder)
+
+        decoder_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        discriminator_params = []
+        for i in self.discriminator:
+            discriminator_params += list(self.discriminator[i].parameters())
+            self.discriminator[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.discriminator[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+        self.d_optimizer = torch.optim.Adam(discriminator_params, lr=5e-5, betas=(0.5, 0.999))
+
+        self.add_module("encoder", self.encoder)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, img, head):
+        representation = self.encoder(img)
+        pred = self.decoder[head](representation)
+        return pred, representation
+
+    def process(self, img, gt, head):
+        # Train Encoder and Decoders
+        self.optimizer.zero_grad()
+        pred, representation= self(img, head)
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+        else:
+            loss = self.loss[head](pred, gt)
+        
+        g_loss = 0
+        valid = torch.ones(img.shape[0], 1, requires_grad=False).cuda()
+        fake = torch.zeros(img.shape[0], 1, requires_grad=False).cuda()
+        for i in self.discriminator:
+            domain = nn.Sigmoid()(self.discriminator[i](representation))
+            if i == head:
+                g_loss += self.adver_loss(domain, fake)
+                continue
+            g_loss += self.adver_loss(domain, valid)
+        
+        g_loss = g_loss/100
+        loss_all = loss + g_loss
+        #self.backward(loss_all, scaler)
+        loss_all.backward()
+        self.optimizer.step()
+        
+        # Train discriminator
+        d_loss = {}
+        self.d_optimizer.zero_grad()
+        for i in self.discriminator:
+            domain = nn.Sigmoid()(self.discriminator[i](representation.detach()))
+            if i == head:
+                d_loss[i] = self.adver_loss(domain, valid)
+                continue
+            d_loss[i] = self.adver_loss(domain, fake)
+        for i in d_loss:
+            d_loss[i].backward()
+        self.d_optimizer.step()
+
+        return pred, loss, g_loss, d_loss
+    
+    def process_without_grad(self, img, gt, head):
+        # Train Encoder and Decoders
+        pred, _ = self(img, head)
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+        else:
+            loss = self.loss[head](pred, gt)
+
+
+        return pred
+    
+    def backward(self, loss, scaler):
+        scaler.scale(loss).backward()
+        scaler.step(self.optimizer)
+        scaler.update()
 
 class build_MMoE_model(nn.Module):
     '''
@@ -924,3 +1182,119 @@ class _transform_resnet_ltb(nn.Module):
                     child_rep = sum([alpha[i,tn,j]*ss_rep[i-1][j] for j in range(self.task_num)]) # j: module idx
                     ss_rep[i][tn] = self.resnet_layer[str(i-1)][tn](child_rep)
         return ss_rep[4]
+
+class build_HPS_model_unified_label_space(nn.Module):
+    '''
+    build hard params shared with unified label space multi-task model
+    '''
+    def __init__(self, args):
+        super(build_HPS_model_unified_label_space, self).__init__()
+        self.encoder = Encoder()
+        
+        type(self).__name__ = "HPS_v2"
+        self.args = args
+        self.decoder = nn.Linear(2048+10, 85)
+        self.loss = get_task_loss(args.data)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+
+        self.add_module("encoder", self.encoder)
+        self.add_module("decoder", self.decoder)
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + list(self.decoder.parameters()), lr=args.lr, betas=(0.5, 0.999))
+
+        self.num_params = 0
+        self.num_trainable_params = 0
+
+    def forward(self, img, head):
+        representation = self.encoder(img)
+        representation = self.avgpool(representation)
+        representation = representation.view(representation.size(0), -1)
+        
+        N = representation.shape[0]
+        task_encoding = torch.zeros(size=(N, 10)).cuda()
+
+        if head == "TAOP":
+            task_encoding[:, 0]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, :5]
+        elif head == "APTOS":
+            task_encoding[:, 1]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 5:10]
+        elif head == "DDR":
+            task_encoding[:, 2]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 10:16]
+        elif head == "AMD":
+            task_encoding[:, 3]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 16:17]
+        elif head == "LAG":
+            task_encoding[:, 4]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 17:18]
+        elif head == "PALM":
+            task_encoding[:, 5]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 18:19]
+        elif head == "REFUGE":
+            task_encoding[:, 6]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 19:20]
+        elif head == "ODIR-5K":
+            task_encoding[:, 7]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 20:28]
+        elif head == "RFMiD":
+            task_encoding[:, 8]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 28:57]
+        elif head == "DR+":
+            task_encoding[:, 9]=1
+            representation = torch.cat([representation, task_encoding], 1)
+            pred = self.decoder(representation)
+            pred = pred[:, 57:]
+        return pred
+
+    def process(self, img, gt, head):
+        pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()

@@ -195,3 +195,24 @@ def get_task_loss(data):
     if "REFUGE" in data:
         loss["REFUGE"] = nn.BCEWithLogitsLoss()
     return loss
+
+class Discriminator(nn.Module):
+    def __init__(self, input=2048, output=10):
+        super(Discriminator, self).__init__()
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = nn.Linear(input, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 256)
+        self.fc4 = nn.Linear(256, output)
+
+    def forward(self, x):
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = F.leaky_relu(x, 0.2)
+        x = self.fc2(x)
+        x = F.leaky_relu(x, 0.2)
+        x = self.fc3(x)
+        x = F.leaky_relu(x, 0.2)
+        x = self.fc4(x)
+        return x

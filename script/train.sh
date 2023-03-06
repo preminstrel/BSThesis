@@ -34,9 +34,16 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DR+" --use_wandb --preproces
 #============================================Multi Task============================================#
 
 # HPS Model 23.6822M (23.6822M trainable)
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 100 --num_workers 2 --batch_size 13 --use_wandb  > archive/logs/HPS/baseline_v2_CAGrad.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 100 --num_workers 2 --batch_size 13 --use_wandb  > archive/logs/HPS/baseline_v2_CAGrad_2.log &
 
-CUDA_VISIBLE_DEVICES=1 python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 100 --num_workers 2 --batch_size 13
+nohup CUDA_VISIBLE_DEVICES=1 python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS --multi_task --epochs 300 --num_workers 2 --batch_size 128 --use_wandb  > archive/logs/HPS/baseline_with_DR+.log &
+
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS_v3 --multi_task --epochs 300 --batches 500 --num_workers 2 --batch_size 128 --use_wandb  > archive/logs/HPS/baseline_with_discriminator_lr=1e-5_gloss=0.05.log &
+
+# 0.3,0.15,0.1, 0.05
+
+# New Discriminator
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project HPS --method HPS_v4 --multi_task --epochs 300 --batches 500 --num_workers 2 --batch_size 128 --use_wandb  > archive/logs/HPS_v4/baseline_lr=5e-5.log &
 
 # MTAN Model 73.3729M (73.3729M trainable)
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+" --project MTAN --method MTAN --multi_task --epochs 1000 --num_workers 2 --use_wandb > archive/logs/MTAN/baseline.log &
