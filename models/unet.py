@@ -159,7 +159,7 @@ class UNET(nn.Module):
 
         out = self.outputs(d4)
 
-        return out
+        return out, bottleneck
 
 #noise = torch.randn((2, 3, 512, 512))
 

@@ -140,7 +140,7 @@ import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 
-bs = 1
+bs = 10
 # DRIVE Dataloader
 train_dataset = DriveDataset()
 
@@ -158,7 +158,7 @@ model.load_state_dict(torch.load(unet_ckpt))
 
 model_D = Discriminator(in_channels=1)
 
-lr = 1e-6 # [512, 1e-6] [224, 1e-6], [224, 1e-5], [224, 1e-4] [512, 1e-4] #
+lr = 1e-5 # [512, 1e-6] [224, 1e-6], [224, 1e-5], [224, 1e-4] [512, 1e-4] #
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 # discriminator/generator learning rate ratio
@@ -166,7 +166,7 @@ d2g_lr = 0.1
 lamd_gen = 1
 optimizer_D = torch.optim.Adam(model_D.parameters(), lr=lr*d2g_lr)
 
-epochs = 5000
+epochs = 1000
 
 # WandB – Initialize a new run
 wandb.init(
@@ -299,3 +299,6 @@ for epoch in range(epochs):
                 "Train Generator Loss": epoch_loss_G})
 
     print("Train Dice Loss: {}, ".format(epoch_loss1),"Train IoU Loss: {}, ".format(epoch_loss2))
+    print("Saving model...")
+    torch.save(model.state_dict(), "/home/hssun/thesis/archive/checkpoints/seg.pth")
+    print("Model saved!")

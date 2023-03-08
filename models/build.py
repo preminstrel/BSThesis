@@ -11,6 +11,7 @@ from utils.info import terminal_msg, get_device
 from utils.model import count_parameters
 from models.resnet import resnet50, resnet18
 from models.resnet_ca import resnet50_ca
+from models.unet import UNET
 
 class build_single_task_model(nn.Module):
     '''
@@ -1267,6 +1268,97 @@ class build_HPS_model_unified_label_space(nn.Module):
 
     def process(self, img, gt, head):
         pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
+
+
+class build_Nova_model(nn.Module):
+    '''
+    build Nova model
+    '''
+    def __init__(self, args):
+        super(build_Nova_model, self).__init__()
+        self.encoder = Encoder()
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth')
+        self.encoder.load_state_dict(ckpt['encoder'])
+        
+        type(self).__name__ = "Nova"
+        self.args = args
+        self.decoder = get_task_head(args.data, input=4096)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+
+        self.seg_model = UNET()
+        ckpt = torch.load('archive/checkpoints/seg.pth')
+        self.seg_model.load_state_dict(ckpt)
+
+        self.seg_head = resnet50(pretrained=True).layer4
+        
+        self.seg_model.to(device)
+        self.encoder.to(device)
+        self.seg_head.to(device)
+
+        num_params, num_trainable_params = count_parameters(self.encoder)
+
+        decoder_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        num_params_seg, num_trainable_params_seg = count_parameters(self.seg_head)
+        self.num_params = num_params + num_params_seg
+        self.num_trainable_params = num_trainable_params + num_trainable_params_seg
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + decoder_params + list(self.seg_head.parameters()), lr=args.lr, betas=(0.5, 0.999))
+
+        self.add_module("encoder", self.encoder)
+        self.add_module("seg_head", self.seg_head)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, img, head):
+        representation = self.encoder(img) # torch.Size([b, 2048, 7, 7])
+        with torch.no_grad():
+            seg_feat = self.seg_model(img)[-1] # torch.Size([b, 1024, 14, 14])
+        seg_feat = self.seg_head(seg_feat) # torch.Size([b, 2048, 7, 7])
+        representation = torch.cat([representation, seg_feat], dim=1) # torch.Size([b, 4096, 7, 7])
+        pred = self.decoder[head](representation)
+        return representation, pred
+
+    def process(self, img, gt, head):
+        representation, pred = self(img, head)
         self.optimizer.zero_grad()
 
         if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:

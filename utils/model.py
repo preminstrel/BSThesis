@@ -56,6 +56,15 @@ def save_checkpoint(self, epoch, save_best=False):
                     continue
                 state[name] = self.model.decoder[name].state_dict()
 
+        elif self.args.method == "Nova":
+            state["encoder"] = self.model.encoder.state_dict()
+            state["seg_head"] = self.model.seg_head.state_dict()
+            state["seg_model"] = self.model.seg_model.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "seg_head" or name == "seg_model":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
+
         elif self.args.method == "MMoE":
             state["encoder"] = self.model.encoder.state_dict()
             state["gate_specific"] = self.model.gate_specific.state_dict()
@@ -123,6 +132,15 @@ def resume_checkpoint(self, resume_path):
             self.model.encoder.load_state_dict(checkpoint['encoder'])
             for name, layer in self.model.named_children():
                 if name == "encoder":
+                    continue
+                self.model.decoder[name].load_state_dict(checkpoint[name])
+        
+        elif self.args.method == "Nova":
+            self.model.encoder.load_state_dict(checkpoint['encoder'])
+            self.model.seg_head.load_state_dict(checkpoint['seg_head'])
+            self.model.seg_model.load_state_dict(checkpoint['seg_model'])
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "seg_head" or name == "seg_model":
                     continue
                 self.model.decoder[name].load_state_dict(checkpoint[name])
         
