@@ -10,6 +10,8 @@ import numpy as np
 
 from models.unet import UNET
 from models.loss import DiceLoss, IoU
+from models.discriminator import Discriminator
+from models.loss import AdversarialLoss
 
 from data.dataset import DriveDataset
 from torch.utils.data import ConcatDataset
@@ -137,15 +139,14 @@ class TrainDataset(torch.utils.data.Dataset):
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-# WandB – Initialize a new run
-wandb.init(project="fundus_segmentation_domain_adaptation")
 
+bs = 1
 # DRIVE Dataloader
 train_dataset = DriveDataset()
 
 train_loader = DataLoader(
     dataset=train_dataset,
-    batch_size=1,
+    batch_size=bs,
     shuffle=True,
     num_workers=2
 )
@@ -155,12 +156,36 @@ model = UNET()
 unet_ckpt = "/home/hssun/thesis/archive/checkpoints/unet.pth"
 model.load_state_dict(torch.load(unet_ckpt))
 
-lr = 1e-6 # [512, 1e-6] [224, 1e-6], [224, 1e-5], [224, 1e-4] [512, 1e-4]
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-epochs = 5000
-loss_fn1 = DiceLoss()
-loss_fn2 = IoU()
+model_D = Discriminator(in_channels=1)
 
+lr = 1e-6 # [512, 1e-6] [224, 1e-6], [224, 1e-5], [224, 1e-4] [512, 1e-4] #
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+# discriminator/generator learning rate ratio
+d2g_lr = 0.1
+lamd_gen = 1
+optimizer_D = torch.optim.Adam(model_D.parameters(), lr=lr*d2g_lr)
+
+epochs = 5000
+
+# WandB – Initialize a new run
+wandb.init(
+    project="fundus_segmentation_domain_adaptation",
+    config = {
+        "learning_rate": lr,
+        "epochs": epochs,
+        "batch_size": bs,
+        "d2g_lr": d2g_lr,
+        "lamd_gen": lamd_gen,
+    }
+)
+
+
+loss_fn1 = DiceLoss().cuda()
+loss_fn2 = IoU().cuda()
+adversarial_loss = AdversarialLoss().cuda()
+
+# Taget Domain Datasets
 all_dataset = []
 data = "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+"
 data_dict = data.split(", ") # ['ODIR-5K', 'TAOP', 'RFMiD']
@@ -176,22 +201,28 @@ transform = transforms.Compose([
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 for data in data_dict:
-    train_dataset = TrainDataset(data, transform=None)
+    train_dataset = TrainDataset(data, transform=transform)
     all_dataset.append(train_dataset)
 
 target_dataset = ConcatDataset(all_dataset)
 print("All Datasets length:", len(target_dataset))
+target_dataloader = DataLoader(target_dataset, batch_size=bs, shuffle=True, num_workers=2)
+target_loader_iter = target_dataloader.__iter__()
 
-# Trainin
+# Train
 for epoch in range(epochs):
 
     model.train()
+    model_D.train()
 
     if torch.cuda.is_available():
         model.cuda()
+        model_D.cuda()
 
     epoch_loss1 = 0.0
     epoch_loss2 = 0.0
+    epoch_loss_D = 0.0
+    epoch_loss_G = 0.0
 
     #with tqdm(train_loader, unit="batch") as tepoch:
 
@@ -199,8 +230,14 @@ for epoch in range(epochs):
     
         x = sample['image']
         y = sample['mask']
-        x = x.cuda()
-        y = y.cuda()
+        x = x.cuda(non_blocking=True)
+        y = y.cuda(non_blocking=True)
+
+        image_target = next(target_loader_iter).cuda(non_blocking=True)
+
+        # ---------------
+        #  Source Domain
+        # ---------------
 
         optimizer.zero_grad()
         y_pred = model(x)
@@ -209,18 +246,56 @@ for epoch in range(epochs):
         score2,loss2 = loss_fn2(y_pred, y)
 
         loss1.backward(retain_graph = True)
-        loss2.backward(retain_graph = True)
+        loss2.backward()
 
         optimizer.step()
 
         epoch_loss1 += loss1.item()
         epoch_loss2 += loss2.item()
 
+        # ---------------
+        #  Target Domain
+        # ---------------
+        # zero optimizers
+        optimizer.zero_grad()
+        optimizer_D.zero_grad()
+
+        # process_outputs
+        output_target_mask = model(image_target)
+        gen_loss = 0
+        dis_loss = 0
+        
+        # discriminator loss
+        dis_input_real = y_pred.detach()
+        dis_input_fake = output_target_mask.detach()
+        dis_real = model_D(dis_input_real)
+        dis_fake = model_D(dis_input_fake)
+        dis_real_loss = adversarial_loss(dis_real, True)
+        dis_fake_loss = adversarial_loss(dis_fake, False)
+        dis_loss += (dis_real_loss + dis_fake_loss) / 2
+        epoch_loss_D += dis_loss.item()
+        
+        dis_loss.backward()
+        optimizer_D.step()
+
+        # generator adversarial loss
+        gen_input_fake = output_target_mask
+        gen_fake = model_D(gen_input_fake)
+        gen_gan_loss = adversarial_loss(gen_fake, True) * lamd_gen
+        gen_loss += gen_gan_loss
+        epoch_loss_G += gen_loss.item()
+        
+        gen_loss.backward()
+        optimizer.step()
 
     epoch_loss1 = epoch_loss1/len(train_loader)
     epoch_loss2 = epoch_loss2/len(train_loader)
-    wandb.log({"img": [wandb.Image(x), wandb.Image(y),wandb.Image(y_pred)]})
+    if epoch % 100 == 0:
+        wandb.log({"source img": [wandb.Image(x), wandb.Image(y),wandb.Image(y_pred)]})
+        wandb.log({"target img": [wandb.Image(image_target), wandb.Image(output_target_mask)]})
     wandb.log({"Train Dice Loss": epoch_loss1, 
-                "Train IoU Loss": epoch_loss2,})
+                "Train IoU Loss": epoch_loss2,
+                "Train Discriminator Loss": epoch_loss_D,
+                "Train Generator Loss": epoch_loss_G})
 
     print("Train Dice Loss: {}, ".format(epoch_loss1),"Train IoU Loss: {}, ".format(epoch_loss2))

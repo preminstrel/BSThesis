@@ -1,0 +1,48 @@
+wandb: Currently logged in as: preminstrel. Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.13.11 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.4
+wandb: Run data is saved locally in /home/hssun/thesis/wandb/run-20230308_155240-8nm62au4
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run ethereal-pond-44
+wandb: ⭐️ View project at https://wandb.ai/preminstrel/fundus_segmentation_domain_adaptation
+wandb: 🚀 View run at https://wandb.ai/preminstrel/fundus_segmentation_domain_adaptation/runs/8nm62au4
+All Datasets length: 78094
+Train Dice Loss: 0.5635144025087356,  Train IoU Loss: 0.7040317803621292, 
+Train Dice Loss: 0.5035335093736648,  Train IoU Loss: 0.6528710871934891, 
+Train Dice Loss: 0.4716424703598022,  Train IoU Loss: 0.6238504618406295, 
+Train Dice Loss: 0.44436136782169344,  Train IoU Loss: 0.6020388752222061, 
+Train Dice Loss: 0.44566193521022796,  Train IoU Loss: 0.5998393148183823, 
+Train Dice Loss: 0.48083165287971497,  Train IoU Loss: 0.6274759113788605, 
+Train Dice Loss: 0.36370762884616853,  Train IoU Loss: 0.5260526210069656, 
+Train Dice Loss: 0.3974118173122406,  Train IoU Loss: 0.5592132806777954, 
+Train Dice Loss: 0.40171152651309966,  Train IoU Loss: 0.5654462516307831, 
+Train Dice Loss: 0.4147364109754562,  Train IoU Loss: 0.5672057300806046, 
+Train Dice Loss: 0.4038388133049011,  Train IoU Loss: 0.5597837924957275, 
+Train Dice Loss: 0.3903122842311859,  Train IoU Loss: 0.5456860542297364, 
+Train Dice Loss: 0.4344386249780655,  Train IoU Loss: 0.5859096258878708, 
+Train Dice Loss: 0.43604463040828706,  Train IoU Loss: 0.5945324569940567, 
+Train Dice Loss: 0.3742885947227478,  Train IoU Loss: 0.5348985165357589, 
+Train Dice Loss: 0.38371205925941465,  Train IoU Loss: 0.5409658849239349, 
+Train Dice Loss: 0.39328053295612336,  Train IoU Loss: 0.543184444308281, 
+Train Dice Loss: 0.41537466645240784,  Train IoU Loss: 0.5694153726100921, 
+Train Dice Loss: 0.3847593367099762,  Train IoU Loss: 0.5396691173315048, 
+Train Dice Loss: 0.39289780855178835,  Train IoU Loss: 0.5486211270093918, 
+Train Dice Loss: 0.39656073451042173,  Train IoU Loss: 0.5510040014982224, 
+Train Dice Loss: 0.42111480236053467,  Train IoU Loss: 0.5737117916345597, 
+Train Dice Loss: 0.35593152344226836,  Train IoU Loss: 0.5160931318998336, 
+Train Dice Loss: 0.3876855313777924,  Train IoU Loss: 0.5461370021104812, 
+Train Dice Loss: 0.3467318952083588,  Train IoU Loss: 0.503553181886673, 
+Train Dice Loss: 0.451909676194191,  Train IoU Loss: 0.6103678792715073, 
+Train Dice Loss: 0.36441107392311095,  Train IoU Loss: 0.5200760960578918, 
+Train Dice Loss: 0.3821322053670883,  Train IoU Loss: 0.5364620059728622, 
+Train Dice Loss: 0.37012726366519927,  Train IoU Loss: 0.5309369206428528, 
+Train Dice Loss: 0.3849140524864197,  Train IoU Loss: 0.5444448202848434, 
+Train Dice Loss: 0.38848956525325773,  Train IoU Loss: 0.5495167940855026, 
+Train Dice Loss: 0.38339194357395173,  Train IoU Loss: 0.5398497104644775, 
+Train Dice Loss: 0.4112888932228088,  Train IoU Loss: 0.5651323825120926, 
+Train Dice Loss: 0.35580177903175353,  Train IoU Loss: 0.5143787294626236, 
+Train Dice Loss: 0.3733612269163132,  Train IoU Loss: 0.535529899597168, 
+Train Dice Loss: 0.3371011793613434,  Train IoU Loss: 0.4989977329969406, 
+Train Dice Loss: 0.39948051869869233,  Train IoU Loss: 0.5502310752868652, 
+Train Dice Loss: 0.34052193760871885,  Train IoU Loss: 0.49961805045604707, 
