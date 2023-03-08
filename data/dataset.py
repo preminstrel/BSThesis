@@ -5,8 +5,10 @@ import torch
 import random
 from torch.utils import data
 from torchvision.transforms import transforms
+import torchvision.transforms.functional as TF
 import pandas as pd
 from torch.utils.data import DataLoader
+import glob
 
 from utils.info import terminal_msg
 from utils.image import RandomGaussianBlur, get_color_distortion
@@ -615,3 +617,70 @@ class ValidDataset(data.Dataset):
 def merge_datasets(dataset, sub_dataset):
     # samples
     dataset.samples.extend(sub_dataset.samples)
+
+class DriveDataset(data.Dataset):
+    def __init__(self):
+        self.images_path = glob.glob('/home/hssun/seg_dataset/training/images/*.tif')
+        self.masks_path = glob.glob('/home/hssun/seg_dataset/training/1st_manual/*.gif')
+        self.n_samples = len(self.images_path)
+        self.transform = ComposeWithMask()
+
+    def __getitem__(self, index):
+        """ Reading image """
+        img = self.load_image(self.images_path[index])
+        mask_file = self.images_path[index].split('/')[-1].replace('training', 'manual1').replace('tif', 'gif')
+        mask_path = os.path.join('/home/hssun/seg_dataset/training/1st_manual/', mask_file)
+        mask = self.load_image(mask_path, mode='L')
+        img, mask = self.transform(img, mask)
+        sample = {'image': img, 'mask': mask}
+
+        return sample
+    
+    def load_image(self, path, mode='RGB'):
+        image = Image.open(path).convert(mode)
+        return image
+
+    def __len__(self):
+        return self.n_samples
+    
+class ComposeWithMask(object):
+    def __init__(self):
+        self.transforms = transforms.Compose([
+            get_color_distortion(),
+            RandomGaussianBlur(),
+            ]),
+        self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                              std=[0.229, 0.224, 0.225])
+
+    def __call__(self, img, mask):
+        # 随机裁剪
+        i, j, h, w = transforms.RandomResizedCrop.get_params(img, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333))
+        img = TF.resize(TF.crop(img, i, j, h, w), (512,512))
+        mask = TF.resize(TF.crop(mask, i, j, h, w), (512,512))
+        # img = TF.resize(img, (224,224))
+        # mask = TF.resize(mask, (224,224))
+
+        # 随机翻转
+        if random.random() > 0.5:
+            img = TF.hflip(img)
+            mask = TF.hflip(mask)
+
+        if random.random() > 0.5:
+            img = TF.vflip(img)
+            mask = TF.vflip(mask)
+        
+        #随机旋转
+        degree = transforms.RandomRotation.get_params([-90, 90])
+        img = TF.rotate(img, degree)
+        mask = TF.rotate(mask, degree)
+
+        # 应用其他变换
+        for t in self.transforms:
+            img = t(img)
+        
+        img = transforms.ToTensor()(img)
+        mask = transforms.ToTensor()(mask)
+        
+        img = self.normalize(img)
+
+        return img, mask
