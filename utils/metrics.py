@@ -7,6 +7,7 @@ def multi_label_metrics(gt_list, pred_list):
     avg_auc_list = []
     avg_kappa_list = []
     avg_f1_list = []
+    best_threshold = []
 
     for i in range(gt_list.shape[1]):
         auc = roc_auc_score(gt_list[:, i], pred_list[:, i])
@@ -25,6 +26,8 @@ def multi_label_metrics(gt_list, pred_list):
         avg_auc_list.append(auc)
         avg_kappa_list.append(kappa_list[np.argmax(kappa_f1)])
         avg_f1_list.append(f1_list[np.argmax(kappa_f1)])
+        best_threshold.append(thresholds[np.argmax(kappa_f1)])
+    print("Best Threshold: ", best_threshold)
     return np.mean(avg_auc_list), np.mean(avg_kappa_list), np.mean(avg_f1_list)
 
 def single_label_metrics(gt_list, pred_list):
@@ -46,4 +49,5 @@ def binary_metrics(gt_list, pred_list):
         f1_list.append(f1)
     kappa_f1 = np.array(kappa_list) + np.array(f1_list)
     
+    print("Best Threshold: ", thresholds[np.argmax(kappa_f1)])
     return auc, kappa_list[np.argmax(kappa_f1)], f1_list[np.argmax(kappa_f1)]

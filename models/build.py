@@ -105,6 +105,222 @@ class build_single_task_model(nn.Module):
             terminal_msg("Error (From build_single_task_model.process)", "F")
             exit()
         return pred, loss
+    
+    def inference(self, img):
+        pred = self(img)
+        if self.args.data in ["TAOP"]:
+            pred = torch.softmax(pred, dim = 1)
+            result = torch.argmax(pred, dim = 1).cpu().tolist()[0]
+            # PM MD Glaucoma RVO DR
+            if result == 0:
+                result = 'PM'
+            elif result == 1:
+                result = 'MD'
+            elif result == 2:
+                result = 'Glaucoma'
+            elif result == 3:
+                result = 'RVO'
+            elif result == 4:
+                result = 'DR'
+        
+        # No DR Mild Moderate Severe Proliferative DR
+        elif self.args.data in ["APTOS"]:
+            pred = torch.softmax(pred, dim = 1)
+            result = torch.argmax(pred, dim = 1).cpu().tolist()[0]
+            if result == 0:
+                result = 'No DR'
+            elif result == 1:
+                result = 'Mild'
+            elif result == 2:
+                result = 'Moderate'
+            elif result == 3:
+                result = 'Severe'
+            elif result == 4:
+                result = 'Proliferative DR'
+        # Level 1 Level 2 Level 3 Level 4 Level 5 Levl 6
+        elif self.args.data in ["DDR"]:
+            pred = torch.softmax(pred, dim = 1)
+            result = torch.argmax(pred, dim = 1).cpu().tolist()[0]
+            if result == 0:
+                result = 'Level 1'
+            elif result == 1:
+                result = 'Level 2'
+            elif result == 2:
+                result = 'Level 3'
+            elif result == 3:
+                result = 'Level 4'
+            elif result == 4:
+                result = 'Level 5'
+            elif result == 5:
+                result = 'Level 6'
+        
+        elif self.args.data == "AMD": #, "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            if pred > -0.5368816256523132:
+                result = 'AMD'
+            else:
+                result = 'Healthy'
+        elif self.args.data == "LAG":
+            pred = pred[:, 0]
+            if pred > -5.750999927520752:
+                result = 'LAG'
+            else:
+                result = 'Healthy'
+        elif self.args.data == "PALM":
+            pred = pred[:, 0]
+            if pred > 2.7738420963287354:
+                result = 'PALM'
+            else:
+                result = 'Healthy'
+        elif self.args.data == "REFUGE":
+            pred = pred[:, 0]
+            if pred > 2.9638054370880127:
+                result = 'REFUGE'
+            else:
+                result = 'Healthy'
+        elif self.args.data == "ODIR-5K":
+            threshold = [0.2455856055021286, -1.5019617080688477, -0.7067285776138306, 0.6726810932159424, -1.9004768133163452, -1.879513144493103, 0.0629885122179985, -1.357914924621582]
+            disease = ['Normal', 'Diabetes', 'Glaucoma', 'Cataract', 'AMD', 'Hypertension', 'Myopia', 'Other']
+            result = []
+            for i in range(len(threshold)):
+                if pred.cpu().tolist()[0][i] > threshold[i]:
+                    result.append(disease[i])
+            if len(result) == 0:
+                result = 'Normal'
+        elif self.args.data == "DR+":
+            threshold = [0.2455856055021286, -1.5019617080688477, -0.7067285776138306, 0.6726810932159424, -1.9004768133163452, -1.879513144493103, 0.0629885122179985, -1.357914924621582]
+            disease = ['normal','hypertensionI','NPDRIII','myopia','NPDRII','disc_glaucoma','macula_small_drusen','macula_other','path_myphia_macula,blur','macula_em','hypertensionII,NPDRI','poor_quality','less_elatic_artery','other','peripheral_fundus','disc_melanocytoma','BRVO','macula_edm','macula_middle_drusen','macula_big_drusen','laserpoint','PDR','VD','VKH','disc_Myel_nerve','OTHER']
+            result = []
+            for i in range(len(threshold)):
+                if pred.cpu().tolist()[0][i] > threshold[i]:
+                    result.append(disease[i])
+            if len(result) == 0:
+                result = 'Normal'
+        elif self.args.data == "RFMiD":
+            threshold=[0.37805188, -0.5384808, -1.6179252, -1.2079208, -2.0160658, -1.2512815, -2.0375624, -1.7305299, -3.5731087, -3.164686, -3.9451232, -3.6643858, -1.2156711, -1.964719, -4.1591845, -3.0842516, -3.964723, -2.6927147, -5.0742035, -3.2514727, -4.2024155, -3.3466794, -2.890675, -3.0476065, -3.2035599, -3.756134, -5.427165, -4.1842685, -3.536751]
+            disease=['Disease_Risk','DR','ARMD','MH','DN','MYA','BRVO','TSLN','ERM','LS','MS','CSR','ODC','CRVO','TV','AH','ODP','ODE','ST','AION','PT','RT','RS','CRS','EDN','RPEC','MHL','RP','OTHER']
+            result = []
+            for i in range(len(threshold)):
+                if pred.cpu().tolist()[0][i] > threshold[i]:
+                    result.append(disease[i])
+            if len(result) == 0:
+                result = 'Normal'
+        else:
+            pred = pred
+            result = 1
+
+        return pred.cpu().tolist(), result
+
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:            
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
+
+class build_single_task_model_maod(nn.Module):
+    '''
+    build single-task model as baselines
+    '''
+    def __init__(self, args):
+        super(build_single_task_model_maod, self).__init__()
+        self.encoder = Encoder()
+        self.encoder_2 = Encoder()
+        self.encoder_3 = Encoder()
+
+        # Finetune with fixed encoder
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth')
+        self.encoder.load_state_dict(ckpt['encoder'])
+        self.encoder_2.load_state_dict(ckpt['encoder'])
+        self.encoder_3.load_state_dict(ckpt['encoder'])
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+
+        self.args = args
+        if args.data == "ODIR-5K":
+            self.decoder = Decoder_multi_classification(num_class = 8, input=2048*3)
+            type(self).__name__ = "ODIR-5K"
+        elif args.data == "RFMiD":
+            self.decoder = Decoder_multi_classification(num_class = 29, input=2048*3)
+            type(self).__name__ = "RFMiD"
+        elif args.data == "TAOP":
+            self.decoder = Decoder_single_classification(num_class = 5, input=2048*3)
+            type(self).__name__ = "TAOP"
+        elif args.data == "APTOS":
+            self.decoder = Decoder_single_classification(num_class = 5, input=2048*3)
+            type(self).__name__ = "APTOS"
+        elif args.data == "Kaggle":
+            self.decoder = Decoder_single_classification(num_class = 5, input=2048*3)
+            type(self).__name__ = "Kaggle"
+        elif args.data == "DR+":
+            self.decoder = Decoder_multi_classification(num_class = 28, input=2048*3)
+            type(self).__name__ = "DR+"
+        elif args.data == "AMD":
+            self.decoder = Decoder_multi_classification(num_class = 1, input=2048*3)
+            type(self).__name__ = "AMD"
+        elif args.data == "DDR":
+            self.decoder = Decoder_single_classification(num_class = 6, input=2048*3)
+            type(self).__name__ = "DDR"
+        elif args.data == "LAG":
+            self.decoder = Decoder_multi_classification(num_class = 1, input=2048*3)
+            type(self).__name__ = "LAG"
+        elif args.data == "PALM":
+            self.decoder = Decoder_multi_classification(num_class = 1, input=2048*3)
+            type(self).__name__ = "PALM"
+        elif args.data == "REFUGE":
+            self.decoder = Decoder_multi_classification(num_class = 1, input=2048*3)
+            type(self).__name__ = "REFUGE"
+        else:
+            terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
+            exit()
+
+
+        self.nll_loss = nn.CrossEntropyLoss()
+
+        self.binary_loss = nn.BCEWithLogitsLoss()
+
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()), lr=args.lr)
+
+        self.add_module("encoder", self.encoder)
+        self.add_module("decoder", self.decoder)
+
+    def forward(self, img, ma, od,):
+        latent_1 = self.encoder(img)
+        latent_2 = self.encoder_2(ma)
+        latent_3 = self.encoder_3(od)
+        latent = torch.cat((latent_1, latent_2, latent_3), dim=1)
+        pred = self.decoder(latent)
+        return pred
+
+    def process(self, img, gt, ma, od,):
+        pred = self(img, ma, od)
+        self.optimizer.zero_grad()
+        if self.args.data == "ODIR-5K":
+            loss = self.binary_loss(pred, gt)
+        elif self.args.data == "RFMiD":
+            loss = self.binary_loss(pred, gt)
+        elif self.args.data == "DR+":
+            loss = self.binary_loss(pred, gt)
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            #print(pred.shape, gt.shape)
+            loss = self.nll_loss(pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+        elif self.args.data in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.binary_loss(pred, gt)
+        else:
+            terminal_msg("Error (From build_single_task_model.process)", "F")
+            exit()
+        return pred, loss
 
     def backward(self, loss = None, scaler = None):
         if scaler is not None:            
@@ -1359,6 +1575,94 @@ class build_Nova_model(nn.Module):
 
     def process(self, img, gt, head):
         representation, pred = self(img, head)
+        self.optimizer.zero_grad()
+
+        if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+            if gt.shape[0] == 1:
+                gt = gt[0].long()
+            else:
+                gt = torch.LongTensor(gt.long().squeeze().cpu()).cuda()
+            loss = self.loss[head](pred, gt)
+            pred = torch.argmax(pred, dim = 1)
+            return pred, loss
+
+        elif head in ["AMD", "LAG", "PALM", "REFUGE"]:
+            pred = pred[:, 0]
+            gt = gt[:, 0]
+            #print(pred, gt)
+            loss = self.loss[head](pred, gt)
+            return pred, loss
+
+        loss = self.loss[head](pred, gt)
+
+        return pred, loss
+
+    def backward(self, loss = None, scaler = None):
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            terminal_msg("GradScaler is disabled!", "F")
+            loss.backward()
+            self.optimizer.step()
+
+
+class build_HPS_model_maod(nn.Module):
+    '''
+    build hard params shared multi-task model
+    '''
+    def __init__(self, args):
+        super(build_HPS_model_maod, self).__init__()
+        
+        self.encoder = Encoder()
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/HPS/model_best.pth')
+        self.encoder.load_state_dict(ckpt['encoder'])
+
+        ckpt = torch.load('/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth')
+        self.encoder_2 = Encoder()
+        self.encoder_2.load_state_dict(ckpt['encoder'])
+
+        self.encoder_3 = Encoder()
+        self.encoder_3.load_state_dict(ckpt['encoder'])
+        
+        type(self).__name__ = "HPS_maod"
+        self.args = args
+        self.decoder = get_task_head(args.data, input=2048*3)
+        self.loss = get_task_loss(args.data)
+        device = get_device()
+
+        self.encoder.to(device)
+        num_params, num_trainable_params = count_parameters(self.encoder)
+
+        decoder_params = []
+        for i in self.decoder:
+            decoder_params += list(self.decoder[i].parameters())
+            self.decoder[i].to(device)
+            num_params_increment, num_trainable_params_increment = count_parameters(self.decoder[i])
+            num_params += num_params_increment
+            num_trainable_params += num_trainable_params_increment
+        
+        self.num_params = num_params
+        self.num_trainable_params = num_trainable_params
+
+        self.optimizer = torch.optim.Adam(list(self.encoder_2.parameters()) + list(self.encoder_3.parameters()) + decoder_params, lr=args.lr, betas=(0.5, 0.999))
+
+        self.add_module("encoder", self.encoder)
+        for i in self.decoder:
+            self.add_module(str(i), self.decoder[i])
+
+    def forward(self, img, ma, od, head):
+        with torch.no_grad():
+            representation = self.encoder(img)
+        representation_2 = self.encoder_2(ma)
+        representation_3 = self.encoder_3(od)
+        representation = torch.cat([representation, representation_2, representation_3], dim=1)
+        pred = self.decoder[head](representation)
+        return representation, pred
+
+    def process(self, img, gt, ma, od, head):
+        representation, pred = self(img, ma, od, head)
         self.optimizer.zero_grad()
 
         if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:

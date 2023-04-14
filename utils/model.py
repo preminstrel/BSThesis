@@ -65,6 +65,15 @@ def save_checkpoint(self, epoch, save_best=False):
                     continue
                 state[name] = self.model.decoder[name].state_dict()
 
+        elif self.args.method == "HPS_maod":
+            state["encoder"] = self.model.encoder.state_dict()
+            state["encoder_2"] = self.model.encoder_2.state_dict()
+            state["encoder_3"] = self.model.encoder_3.state_dict()
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "encoder_2" or name == "encoder_3":
+                    continue
+                state[name] = self.model.decoder[name].state_dict()
+
         elif self.args.method == "MMoE":
             state["encoder"] = self.model.encoder.state_dict()
             state["gate_specific"] = self.model.gate_specific.state_dict()
@@ -141,6 +150,14 @@ def resume_checkpoint(self, resume_path):
             self.model.seg_model.load_state_dict(checkpoint['seg_model'])
             for name, layer in self.model.named_children():
                 if name == "encoder" or name == "seg_head" or name == "seg_model":
+                    continue
+                self.model.decoder[name].load_state_dict(checkpoint[name])
+        elif self.args.method == "HPS_maod":
+            self.model.encoder.load_state_dict(checkpoint['encoder'])
+            self.model.encoder_2.load_state_dict(checkpoint['encoder_2'])
+            self.model.encoder_3.load_state_dict(checkpoint['encoder_3'])
+            for name, layer in self.model.named_children():
+                if name == "encoder" or name == "encoder_2" or name == "encoder_3":
                     continue
                 self.model.decoder[name].load_state_dict(checkpoint[name])
         

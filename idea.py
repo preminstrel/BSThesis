@@ -5,9 +5,9 @@ from torchsummary import summary
 import warnings
 import os
 
-from models.build import build_single_task_model, build_HPS_model, build_MMoE_model, build_CGC_model, build_MTAN_model, build_DSelectK_model, build_LTB_model, build_HPS_model_unified_label_space, build_HPS_model_with_Domain_Discriminator, build_HPS_model_with_Multiple_Domain_Discriminator, build_Nova_model
+from models.build import build_single_task_model, build_HPS_model, build_MMoE_model, build_CGC_model, build_MTAN_model, build_DSelectK_model, build_LTB_model, build_HPS_model_unified_label_space, build_HPS_model_with_Domain_Discriminator, build_HPS_model_with_Multiple_Domain_Discriminator, build_Nova_model, build_HPS_model_maod, build_single_task_model_maod
 
-from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed, Multi_Task_Trainer_v2, Multi_Task_Trainer_v3, Multi_Task_Trainer_with_Domain_Discriminator, Multi_Task_Trainer_with_Multiple_Domain_Discriminator
+from engine.train import Single_Task_Trainer, Multi_Task_Trainer, setup_seed, Multi_Task_Trainer_v2, Multi_Task_Trainer_v3, Multi_Task_Trainer_with_Domain_Discriminator, Multi_Task_Trainer_with_Multiple_Domain_Discriminator, Multi_Task_Trainer_Pseudo, Multi_Task_Trainer_maod, Single_Task_Trainer_maod
 from engine.eval import Single_Task_Evaluation, Multi_Task_Evaluation
 from engine.adapter import MTL_adapter
 
@@ -29,6 +29,8 @@ if __name__ == "__main__":
     if args.multi_task:
         if args.method == "HPS":
             model = build_HPS_model(args)
+        elif args.method == "HPS_maod":
+            model = build_HPS_model_maod(args)
         elif args.method == "HPS_v2":
             model = build_HPS_model_unified_label_space(args)
         elif args.method == "HPS_v3":
@@ -79,7 +81,7 @@ if __name__ == "__main__":
             if args.method == "Adapter":
                 MTL_adapter(args, device, train_data, valid_dataloaders)
             else:
-                Multi_Task_Trainer(args, model, device, train_data, valid_dataloaders)
+                Multi_Task_Trainer_maod(args, model, device, train_data, valid_dataloaders)
         elif args.mode == 'eval':
             Multi_Task_Evaluation(args, model, device, valid_dataloaders)
 

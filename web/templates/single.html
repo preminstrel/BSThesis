@@ -1,0 +1,48 @@
+{% block navbar %}
+{% include "navi.html" %}
+{% endblock %}
+
+{% block content %}
+<div style="margin:auto;">
+<h1 class="text-center" style="color: aliceblue;"><i class="bi bi-images"></i> Please Upload a Fundus Image.</h1>
+<form action="{{ url_for('singleupload') }}" method="POST" enctype="multipart/form-data" >
+<div class="form-group">
+    <div class="mb-3">
+        <label for="formFile" class="form-label">Default file input example</label>
+        <div class="custom-file">
+            <input type="file" class="form-control" id="fileInput" name="file">
+            <label class="custom-file-label" for="fileInput">Choose file</label>
+        </div>
+        <div class="row">
+            <div class="col-md-6 text-white text-center">
+                <h3><i class="bi bi-check2-circle"></i> Select a Disease</h3>
+            </div>
+            <div class="col-md-6">
+                <select class="form-select" id="select" name="disease">
+                    <option>TAOP</option>
+                    <option>APTOS</option>
+                    <option>DDR</option>
+                    <option>AMD</option>
+                    <option>LAG</option>
+                    <option>PALM</option>
+                    <option>REFUGE</option>
+                    <option>ODIR-5K</option>
+                    <option>RFMiD</option>
+                    <option>DR+</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+<center><h1><button type="submit" class="btn btn-lg btn-primary fw-bold text-center"><i class="bi bi-cloud-upload"></i> Upload</button></h1></center>
+<br>
+</form>
+<center><img src="{{ url_for('static', filename='img/fundus.png') }}" class="img-fluid" alt="Responsive image" style="height: 200px;"></center>
+</div>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+{% endblock %}
+
+{% block footer %}
+    {% include "footer.html" %}
+{% endblock %}
+

@@ -45,7 +45,7 @@ def get_train_transforms(img_size):
     resize (256)-> random crop (224) -> random filp -> color distortion -> GaussianBlur -> normalize
     '''
     transform = transforms.Compose([
-        #transforms.Resize((256, 256)),
+        transforms.Resize((256, 256)),
         transforms.RandomCrop(img_size),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
@@ -401,69 +401,119 @@ class TrainDataset(data.Dataset):
         if self.data == 'ODIR-5K':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'train_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'RFMiD':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
             else:
                 img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'TAOP':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
             else:
                 img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'APTOS':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
             else:
                 img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'Kaggle':
             img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
+            ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
+            od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
         elif self.data == 'DR+':
             if self.args.preprocessed:
                 img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]))
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
                 index = str(self.landmarks_frame.iloc[idx, 0])
                 if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
                     img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
+                    # ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_train/', index)
+                    # od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_train/', index)
                 elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
                     img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+                    #ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/', index)
+                    #od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_valid/', index)
                 else:
                     print('Cannot find img path (DR+)')
-                    exit()
+                if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/ma_train/{index}'):
+                    ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_train/', index)
+                elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/{index}'):
+                    ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/', index)
+                else:
+                    print('Cannot find ma path (DR+)')
+                if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/od_train/{index}'):
+                    od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_train/', index)
+                elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/{index}'):
+                    od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_valid/', index)
+                else:
+                    print('Cannot find ma path (DR+)')
+        
         elif self.data == 'AMD':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/', 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/', 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'DDR':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'LAG':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'train_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
                 img_path = os.path.join(self.data_root, 'train/', str(self.landmarks_frame.iloc[idx, 0]))
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]))
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]))
         elif self.data == 'PALM':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'REFUGE':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
             exit()
 
         img = self.load_image(img_path)
+        ma_img = self.load_image(ma_path)
+        od_img = self.load_image(od_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
-        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
+        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float(), 'ma_img': ma_img, 'od_img': od_img}
 
         return sample
 
@@ -548,23 +598,37 @@ class ValidDataset(data.Dataset):
                 img_path = os.path.join(self.data_root, 'valid_CLAHE/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'valid_resized/', self.landmarks_frame.iloc[idx, 0] + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'RFMiD':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'valid_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
             else:
                 img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'TAOP':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
             else:
                 img_path = os.path.join(self.data_root, 'png_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'APTOS':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
             else:
                 img_path = os.path.join(self.data_root, 'train_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.png')
         elif self.data == 'Kaggle':
             img_path = os.path.join(self.data_root, 'valid_resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpeg')
+            ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+            od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'DR+':
             if self.args.preprocessed:
                 img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
@@ -572,42 +636,76 @@ class ValidDataset(data.Dataset):
                 index = str(self.landmarks_frame.iloc[idx, 0])
                 if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/{index}'):
                     img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/train_resized/', index)
+                    # ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_train/', index)
+                    # od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_train/', index)
                 elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/{index}'):
                     img_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/valid_resized/', index)
+                    #ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/', index)
+                    #od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_valid/', index)
                 else:
                     print('Cannot find img path (DR+)')
+                if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/ma_train/{index}'):
+                    ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_train/', index)
+                elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/{index}'):
+                    ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/', index)
+                else:
+                    print('Cannot find ma path (DR+)')
+                if os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/od_train/{index}'):
+                    od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_train/', index)
+                elif os.path.exists(f'/mnt/data3_ssd/RetinalDataset/Kaggle/ma_valid/{index}'):
+                    od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/Kaggle/od_valid/', index)
+                else:
+                    print('Cannot find ma path (DR+)')
         elif self.data == 'AMD':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join('/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/', 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join('/mnt/data3_ssd/RetinalDataset/iChallenge-AMD/', 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'DDR':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'LAG':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'valid_CLAHE/', str(self.landmarks_frame.iloc[idx, 0]))
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]))
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]))
             else:
                 img_path = os.path.join(self.data_root, 'valid/', str(self.landmarks_frame.iloc[idx, 0]))
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) )
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) )
         elif self.data == 'PALM':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         elif self.data == 'REFUGE':
             if self.args.preprocessed:
                 img_path = os.path.join(self.data_root, 'CLAHE/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
             else:
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+                od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__getitem__)", "F")
             exit()
 
         img = self.load_image(img_path)
+        ma_img = self.load_image(ma_path)
+        od_img = self.load_image(od_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
-        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
+        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float(), 'ma_img': ma_img, 'od_img': od_img}
 
         return sample
 

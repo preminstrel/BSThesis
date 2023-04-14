@@ -1,0 +1,23 @@
+{% block navbar %}
+{% include "navi.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto p-3 text-center text-white bg-dark" style="margin:auto;">
+    <h1>Fundus Image Diagnosis</h1>
+    <p class="lead">AI doctor for everyone, forever.</p>
+    <p class="lead">
+        <a href="/single" class="btn btn-lg btn-secondary fw-bold border-white bg-white"><i class="bi bi-lightning-fill"></i> Single Task</a>
+        &nbsp; &nbsp;
+        <a href="#" class="btn btn-lg btn-secondary fw-bold border-white bg-white"><i class="fa fa-github" style="font-size:24px"></i> Code</a>
+        &nbsp; &nbsp;
+        <a href="/single" class="btn btn-lg btn-secondary fw-bold border-white bg-white"><i class="bi bi-cpu-fill"></i> Multi Task</a>
+        </p>
+    <center><img src="{{ url_for('static', filename='img/fundus2.png') }}" class="img-fluid" alt="Responsive image" style="height: 200px;"></center>
+</div>
+{% endblock %}
+
+{% block footer %}
+    {% include "footer.html" %}
+{% endblock %}
+
