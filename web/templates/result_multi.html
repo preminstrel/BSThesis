@@ -1,0 +1,45 @@
+{% block navbar %}
+{% include "navi.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="row mt-6 mb-3">
+<h1 class="text-center" style="color: aliceblue;"><i class="bi bi-heart-pulse"></i> Diagnosis Result</h1>
+></div>
+<center>
+<div class="row mt-3 mb-3" style="width: 1400px;">
+    <div class="col-md-6 text-white text-center">
+        <h3><i class="bi bi-cloud-check"></i> Uploaded Image</h3>
+    </div>
+    <div class="col-md-6 text-white text-center">
+        <h3><i class="bi bi-file-earmark-medical"></i> AI Generated Report</h3>
+    </div>
+</div>
+</center>
+<div style="margin:auto;">
+    <div class="row"  style="width: 1400px;">
+        <div class="col-md-6 text-white text-center">
+            <center><img src="{{ img_url }}" class="img-fluid" alt="Responsive image" style="height: 200px;"></center>
+        </div>
+        <div class="col-md-6 text-white">
+            <h5> Disease Model: HPS (Multi-task)</h5>
+            <h5> TAOP: {{ result.TAOP }} </h5>
+            <h5> APTOS: {{ result.APTOS}} </h5>
+            <h5> DDR: {{ result.DDR }} </h5>
+            <h5> AMD: {{ result.AMD }} </h5>
+            <h5> LAG: {{ result.LAG }} </h5>
+            <h5> PALM: {{ result.PALM }} </h5>
+            <h5> REFUGE: {{ result.REFUGE }} </h5>
+            <h5> ODIR-5K: {{ result['ODIR-5K'] }} </h5>
+            <h5> RFMiD: {{ result.RFMiD }} </h5>
+            <h5> DR+: {{ result['DR+'] }} </h5>
+        </div>
+    </div>
+</div>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+{% endblock %}
+
+{% block footer %}
+    {% include "footer.html" %}
+{% endblock %}
+

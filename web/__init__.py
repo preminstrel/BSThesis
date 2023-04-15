@@ -1,6 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for
-from web import db
+from flask import Flask, render_template, request, redirect, url_for, send_file
 from flask_bootstrap import Bootstrap4
 from models.build import build_HPS_model, build_single_task_model
 import torch
@@ -44,15 +43,24 @@ def create_app(test_config=None):
     def index():
         return render_template("index.html")
     
+    @app.route("/pdf", endpoint="pdf", methods=['GET', 'POST'])
+    def get_pdf():
+        filename = request.args.get('filename')
+        return send_file(filename, as_attachment=True)
+
+    @app.route("/doc", endpoint="doc")
+    def doc():
+        return render_template("doc.html")
+    
     @app.route("/single", endpoint="single")
-    def index():
+    def single():
         return render_template("single.html")
     
     @app.route("/single/upload", endpoint="singleupload", methods=['GET', 'POST'])
-    def upload():
+    def single_upload():
         if request.method == 'POST':
             uploaded_file = request.files['file']
-            uploaded_file.save('/home/hssun/thesis/web/upload/' + uploaded_file.filename)
+            uploaded_file.save('/home/hssun/thesis/web/static/img/' + uploaded_file.filename)
             disease = request.form.get('disease')
             
             a = myargs(disease)
@@ -61,12 +69,17 @@ def create_app(test_config=None):
             checkpoint = torch.load(best_model_path)
             model.encoder.load_state_dict(checkpoint['encoder'])
             model.decoder.load_state_dict(checkpoint['decoder'])
-            path = '/home/hssun/thesis/web/upload/' + uploaded_file.filename
+            
+            path = '/home/hssun/thesis/web/static/img/' + uploaded_file.filename
             transform = get_valid_transforms(224)
             img = Image.open(path).convert('RGB')
             img = transform(img).cuda().unsqueeze(0)
             raw, result = model.inference(img)
+            
+            img_url = url_for('static', filename='img/' + uploaded_file.filename)
         
+        return render_template("result_single.html", disease=disease, img_url=img_url, raw=raw, result=result)
+
         return {
             "message": "File successfully uploaded",
             "disease": disease,
@@ -74,9 +87,41 @@ def create_app(test_config=None):
             "raw": raw,
             "result": result
         }
-
     
-    # register the database commands
-    db.init_app(app)
+    @app.route("/multi", endpoint="multi")
+    def multi():
+        return render_template("multi.html")
+    
+    @app.route("/multi/upload", endpoint="multiupload", methods=['GET', 'POST'])
+    def multi_upload():
+        if request.method == 'POST':
+            uploaded_file = request.files['file']
+            uploaded_file.save('/home/hssun/thesis/web/static/img/' + uploaded_file.filename)
+            
+            a = myargs("TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+")
+            model =build_HPS_model(args=a).cuda()
+            best_model_path = "/home/hssun/thesis/archive/checkpoints/HPS/model_best.pth"
+            checkpoint = torch.load(best_model_path)
+            model.encoder.load_state_dict(checkpoint['encoder'])
+            for name, layer in model.named_children():
+                if name == "encoder":
+                    continue
+                model.decoder[name].load_state_dict(checkpoint[name])
+            
+            path = '/home/hssun/thesis/web/static/img/' + uploaded_file.filename
+            transform = get_valid_transforms(224)
+            img = Image.open(path).convert('RGB')
+            img = transform(img).cuda().unsqueeze(0)
+            raw, result = model.inference(img)
+
+            img_url = url_for('static', filename='img/' + uploaded_file.filename)
+        
+        return render_template("result_multi.html", img_url=img_url, raw=raw, result=result)
+        return {
+            "message": "File successfully uploaded",
+            "path": '/home/hssun/thesis/web/upload/' + uploaded_file.filename,
+            "raw": raw,
+            "result": result
+        }
 
     return app

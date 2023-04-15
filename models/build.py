@@ -188,8 +188,8 @@ class build_single_task_model(nn.Module):
             if len(result) == 0:
                 result = 'Normal'
         elif self.args.data == "DR+":
-            threshold = [0.2455856055021286, -1.5019617080688477, -0.7067285776138306, 0.6726810932159424, -1.9004768133163452, -1.879513144493103, 0.0629885122179985, -1.357914924621582]
-            disease = ['normal','hypertensionI','NPDRIII','myopia','NPDRII','disc_glaucoma','macula_small_drusen','macula_other','path_myphia_macula,blur','macula_em','hypertensionII,NPDRI','poor_quality','less_elatic_artery','other','peripheral_fundus','disc_melanocytoma','BRVO','macula_edm','macula_middle_drusen','macula_big_drusen','laserpoint','PDR','VD','VKH','disc_Myel_nerve','OTHER']
+            threshold = [-1.0270328521728516, -1.4625487327575684, -2.5361409187316895, 0.19546514749526978, -2.0564868450164795, -0.8718031644821167, -1.90958571434021, -2.3469769954681396, -1.5741804838180542, 0.348300576210022, -1.7483311891555786, -3.15628981590271, -3.507082223892212, -1.6539252996444702, -4.012187957763672, -2.130258560180664, -3.1294760704040527, -4.462714195251465, -2.9427831172943115, -1.8766281604766846, -2.04665207862854, -0.3300577402114868, -0.9426285028457642, -1.5436667203903198, -3.4340991973876953, -0.8320326209068298, -2.3021559715270996, -2.230966091156006]
+            disease = ['Normal','hypertensionI','NPDRIII','myopia','NPDRII','disc_glaucoma','macula_small_drusen','macula_other','path_myphia_macula,blur','macula_em','hypertensionII,NPDRI','poor_quality','less_elatic_artery','other','peripheral_fundus','disc_melanocytoma','BRVO','macula_edm','macula_middle_drusen','macula_big_drusen','laserpoint','PDR','VD','VKH','disc_Myel_nerve','OTHER']
             result = []
             for i in range(len(threshold)):
                 if pred.cpu().tolist()[0][i] > threshold[i]:
@@ -197,7 +197,7 @@ class build_single_task_model(nn.Module):
             if len(result) == 0:
                 result = 'Normal'
         elif self.args.data == "RFMiD":
-            threshold=[0.37805188, -0.5384808, -1.6179252, -1.2079208, -2.0160658, -1.2512815, -2.0375624, -1.7305299, -3.5731087, -3.164686, -3.9451232, -3.6643858, -1.2156711, -1.964719, -4.1591845, -3.0842516, -3.964723, -2.6927147, -5.0742035, -3.2514727, -4.2024155, -3.3466794, -2.890675, -3.0476065, -3.2035599, -3.756134, -5.427165, -4.1842685, -3.536751]
+            threshold=[0.37855303, -0.13819195, -0.78424203, -0.91789585, -0.74678844, -1.5736463, -0.5782082, -1.5337312, -3.5204687, -0.4336082, -2.0424666, -1.3484724, -0.48322168, -0.50558966, -5.2686853, -2.2061486, -1.7399863, -2.3982387, -6.8910546, -3.0282607, -2.1848166, 0.4018555, -0.2792644, -0.63468456, -1.5956916, -4.359728, -5.1925945, -3.8637106, -2.7161899]
             disease=['Disease_Risk','DR','ARMD','MH','DN','MYA','BRVO','TSLN','ERM','LS','MS','CSR','ODC','CRVO','TV','AH','ODP','ODE','ST','AION','PT','RT','RS','CRS','EDN','RPEC','MHL','RP','OTHER']
             result = []
             for i in range(len(threshold)):
@@ -417,6 +417,112 @@ class build_HPS_model(nn.Module):
         loss = self.loss[head](pred, gt)
 
         return pred, loss
+
+    def inference(self, img):
+        raw = {}
+        all_result = {}
+        for head in self.decoder:
+            representation, pred = self(img, head)
+            if head == "TAOP":
+                pred = torch.softmax(pred, dim = 1)
+                result = torch.argmax(pred, dim = 1).cpu().tolist()[0]
+                # PM MD Glaucoma RVO DR
+                if result == 0:
+                    result = 'PM'
+                elif result == 1:
+                    result = 'MD'
+                elif result == 2:
+                    result = 'Glaucoma'
+                elif result == 3:
+                    result = 'RVO'
+                elif result == 4:
+                    result = 'DR'
+            
+            # No DR Mild Moderate Severe Proliferative DR
+            elif head == "APTOS":
+                pred = torch.softmax(pred, dim = 1)
+                result = torch.argmax(pred, dim = 1).cpu().tolist()[0]
+                if result == 0:
+                    result = 'No DR'
+                elif result == 1:
+                    result = 'Mild'
+                elif result == 2:
+                    result = 'Moderate'
+                elif result == 3:
+                    result = 'Severe'
+                elif result == 4:
+                    result = 'Proliferative DR'
+            # Level 1 Level 2 Level 3 Level 4 Level 5 Levl 6
+            elif head == "DDR":
+                pred = torch.softmax(pred, dim = 1)
+                result = torch.argmax(pred, dim = 1).cpu().tolist()[0]
+                if result == 0:
+                    result = 'Level 1'
+                elif result == 1:
+                    result = 'Level 2'
+                elif result == 2:
+                    result = 'Level 3'
+                elif result == 3:
+                    result = 'Level 4'
+                elif result == 4:
+                    result = 'Level 5'
+                elif result == 5:
+                    result = 'Level 6'
+            
+            elif head == "AMD": #, "LAG", "PALM", "REFUGE"]:
+                pred = pred[:, 0]
+                if pred > -2.9793972969055176:
+                    result = 'AMD'
+                else:
+                    result = 'Healthy'
+            elif self.args.data == "LAG":
+                pred = pred[:, 0]
+                if pred > -0.6812215447425842:
+                    result = 'LAG'
+                else:
+                    result = 'Healthy'
+            elif head == "PALM":
+                pred = pred[:, 0]
+                if pred > 11.904650688171387:
+                    result = 'PALM'
+                else:
+                    result = 'Healthy'
+            elif head == "REFUGE":
+                pred = pred[:, 0]
+                if pred > -2.3692798614501953:
+                    result = 'REFUGE'
+                else:
+                    result = 'Healthy'
+            elif head == "ODIR-5K":
+                threshold = [0.3135814964771271, -1.5478909015655518, -0.5353381633758545, 1.775793433189392, -0.3619544506072998, -1.8459056615829468, -0.7347548007965088, -1.877827525138855]
+                disease = ['Normal', 'Diabetes', 'Glaucoma', 'Cataract', 'AMD', 'Hypertension', 'Myopia', 'Other']
+                result = []
+                for i in range(len(threshold)):
+                    if pred.cpu().tolist()[0][i] > threshold[i]:
+                        result.append(disease[i])
+                if len(result) == 0:
+                    result = 'Normal'
+            elif head == "DR+":
+                threshold = [-0.9615495204925537, -0.8115447759628296, -0.6755781769752502, -0.423141747713089, -1.5640143156051636, -1.0614187717437744, -0.9796614646911621, -2.09184193611145, -3.0280685424804688, -1.570355772972107, -2.322948455810547, -2.684434652328491, -2.0842716693878174, -2.4217844009399414, -2.403592824935913, -2.828566789627075, -5.243434906005859, -5.4233832359313965, -3.5496766567230225, -4.38045597076416, -3.5037786960601807, -2.8160195350646973, -2.6569111347198486, -3.898740291595459, -2.5162289142608643, -3.3365116119384766, -2.7653253078460693, -2.539547920227051]
+                disease = ['Normal','hypertensionI','NPDRIII','myopia','NPDRII','disc_glaucoma','macula_small_drusen','macula_other','path_myphia_macula,blur','macula_em','hypertensionII,NPDRI','poor_quality','less_elatic_artery','other','peripheral_fundus','disc_melanocytoma','BRVO','macula_edm','macula_middle_drusen','macula_big_drusen','laserpoint','PDR','VD','VKH','disc_Myel_nerve','OTHER']
+                result = []
+                for i in range(len(threshold)):
+                    if pred.cpu().tolist()[0][i] > threshold[i]:
+                        result.append(disease[i])
+                if len(result) == 0:
+                    result = 'Normal'
+            elif head == "RFMiD":
+                threshold=[2.832249164581299, 0.6183937191963196, -1.1284656524658203, -0.1452810913324356, -1.4336272478103638, -2.1052439212799072, 0.10326920449733734, -1.7145408391952515, -3.6173908710479736, 1.3707362413406372, -1.5526577234268188, -1.1236215829849243, -0.6363812685012817, 0.9093182682991028, -5.586537837982178, -2.4620957374572754, -2.530487537384033, -2.7228002548217773, -12.486294746398926, 0.11216999590396881, -2.326587200164795, -0.4868244528770447, 1.041844129562378, -1.790145993232727, -1.2191691398620605, -3.767873764038086, -4.392719268798828, -2.4288249015808105, -4.096928596496582]
+                disease=['Disease_Risk','DR','ARMD','MH','DN','MYA','BRVO','TSLN','ERM','LS','MS','CSR','ODC','CRVO','TV','AH','ODP','ODE','ST','AION','PT','RT','RS','CRS','EDN','RPEC','MHL','RP','OTHER']
+                result = []
+                for i in range(len(threshold)):
+                    if pred.cpu().tolist()[0][i] > threshold[i]:
+                        result.append(disease[i])
+                if len(result) == 0:
+                    result = 'Normal'
+            raw[head]=pred.cpu().tolist()
+            all_result[head]=result
+        return raw, all_result
 
     def backward(self, loss = None, scaler = None):
         if scaler is not None:

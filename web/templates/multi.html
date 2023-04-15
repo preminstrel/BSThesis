@@ -5,33 +5,13 @@
 {% block content %}
 <div style="margin:auto;">
 <h1 class="text-center" style="color: aliceblue;"><i class="bi bi-images"></i> Please Upload a Fundus Image.</h1>
-<form class="was-validated" action="{{ url_for('singleupload') }}" method="POST" enctype="multipart/form-data" >
+<form class="was-validated" action="{{ url_for('multiupload') }}" method="POST" enctype="multipart/form-data" >
 <div class="form-group">
     <div class="mb-3">
         <label for="formFile" class="form-label">Default file input example</label>
         <div class="custom-file">
             <input type="file" class="form-control" id="fileInput" name="file" required>
             <label class="custom-file-label" for="fileInput">Choose file</label>
-        </div>
-        <div class="row">
-            <div class="col-md-6 text-white text-center">
-                <h3><i class="bi bi-check2-circle"></i> Select a Disease</h3>
-            </div>
-            <div class="col-md-6">
-                <select class="form-select" required name="disease">
-                    <option selected disabled value="">Choose...</option>
-                    <option>TAOP</option>
-                    <option>APTOS</option>
-                    <option>DDR</option>
-                    <option>AMD</option>
-                    <option>LAG</option>
-                    <option>PALM</option>
-                    <option>REFUGE</option>
-                    <option>ODIR-5K</option>
-                    <option>RFMiD</option>
-                    <option>DR+</option>
-                </select>
-            </div>
         </div>
     </div>
 </div>

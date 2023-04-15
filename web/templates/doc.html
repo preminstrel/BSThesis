@@ -1,0 +1,29 @@
+{% block navbar %}
+{% include "navi.html" %}
+{% endblock %}
+
+{% block content %}
+<div style="margin:auto; max-width: 1400px;">
+<h1 class="text-center" style="color: aliceblue;">基于多任务学习的眼底多病种诊断模型的设计与实现</h1>
+<h5 class="text-center" style="color: aliceblue;">电子科学与工程学院 06219109 孙寒石</h5>
+<h5 class="text-center" style="color: aliceblue;">指导老师：周 毅</h5>
+<p class="text-center" style="color: aliceblue;">本课题需要设计实现一个多疾病辅助识别模型，需要同时处理多个任务，包括分类和分割等。如何在不同任务之间平衡模型的学习和避免任务之间的干扰，同时提高模型的精度和效率是一个关键问题。后续可能工作为在FPGA上部署，并优化算法压缩网络实现硬件加速。</p>
+<center>
+<p>
+    <a href="{{ url_for('pdf', filename = 'static/pdf/task.pdf') }}" class="btn btn-info"></i><i class="bi bi-rocket-takeoff"></i> 任务书</a>
+    &nbsp; &nbsp;
+    <a href= "{{ url_for('pdf', filename = 'static/pdf/proposal.pdf') }}" class="btn btn-primary"><i class="bi bi-hourglass-split"></i> 开题报告</a>
+    &nbsp; &nbsp;
+    <a href="{{ url_for('pdf', filename = 'static/pdf/proposal.pdf') }}" class="btn btn-success"><i class="bi bi-file-earmark-pdf"></i> 论文</a>
+</p>
+</center>
+<br><br>
+<center><img src="{{ url_for('static', filename='img/Thesis.drawio.png') }}" class="img-fluid" alt="Responsive image" style="height: 460px;"></center>
+</div>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+{% endblock %}
+
+{% block footer %}
+    {% include "footer.html" %}
+{% endblock %}
+
