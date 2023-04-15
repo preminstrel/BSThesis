@@ -62,6 +62,9 @@ class build_single_task_model(nn.Module):
         elif args.data == "REFUGE":
             self.decoder = Decoder_multi_classification(num_class = 1)
             type(self).__name__ = "REFUGE"
+        elif args.data == "IDRiD":
+            self.decoder = Decoder_single_classification(num_class = 5)
+            type(self).__name__ = "IDRiD"
         else:
             terminal_msg("Args.Data Error (From build_single_task_model.__init__)", "F")
             exit()
@@ -88,7 +91,7 @@ class build_single_task_model(nn.Module):
             loss = self.binary_loss(pred, gt)
         elif self.args.data == "DR+":
             loss = self.binary_loss(pred, gt)
-        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR"]:
+        elif self.args.data in ["TAOP", "APTOS", "Kaggle", "DDR", "IDRiD"]:
             if gt.shape[0] == 1:
                 gt = gt[0].long()
             else:

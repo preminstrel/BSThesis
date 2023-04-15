@@ -20,6 +20,9 @@ python idea.py --data "RFMiD" --mode eval --resume archive/checkpoints/RFMiD/mod
 
 python idea.py --data "DR+" --mode eval --resume archive/checkpoints/DR+/model_best.pth --num_workers 4
 
+
+python idea.py --data "IDRiD" --mode eval --resume archive/checkpoints/IDRiD/model_best.pth --num_workers 4
+
 #================================Multi Task================================#
 
 CUDA_VISIBLE_DEVICES=1 python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD, DR+"  --mode eval --method HPS --multi_task --num_workers 4 --resume archive/checkpoints/HPS/model_best.pth

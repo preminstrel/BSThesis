@@ -384,6 +384,9 @@ class TrainDataset(data.Dataset):
         elif self.data == 'REFUGE':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/REFUGE/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_train.csv')
+        elif self.data == 'IDRiD':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/IDRiD/B. Disease Grading/'
+            self.landmarks_frame = pd.read_csv(self.data_root + '2. Groundtruths/train_grade.csv')
         else:
             terminal_msg("Args.Data ({}) Error (From TrainDataset.__init__)".format(data), "F")
             exit()
@@ -505,15 +508,17 @@ class TrainDataset(data.Dataset):
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
                 ma_path = os.path.join(self.data_root, 'ma_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
                 od_path = os.path.join(self.data_root, 'od_train/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'IDRiD':
+            img_path = os.path.join(self.data_root, '1. Original Images/a. Training Set/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From TrainDataset.__getitem__)", "F")
             exit()
 
         img = self.load_image(img_path)
-        ma_img = self.load_image(ma_path)
-        od_img = self.load_image(od_path)
+        # ma_img = self.load_image(ma_path)
+        # od_img = self.load_image(od_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
-        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float(), 'ma_img': ma_img, 'od_img': od_img}
+        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
 
         return sample
 
@@ -580,6 +585,9 @@ class ValidDataset(data.Dataset):
         elif self.data == 'REFUGE':
             self.data_root = '/mnt/data3_ssd/RetinalDataset/REFUGE/'
             self.landmarks_frame = pd.read_csv(self.data_root + 'label_valid.csv')
+        elif self.data == 'IDRiD':
+            self.data_root = '/mnt/data3_ssd/RetinalDataset/IDRiD/B. Disease Grading/'
+            self.landmarks_frame = pd.read_csv(self.data_root + '2. Groundtruths/test_grade.csv')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__init__)", "F")
                 
@@ -697,15 +705,17 @@ class ValidDataset(data.Dataset):
                 img_path = os.path.join(self.data_root, 'resized/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
                 ma_path = os.path.join(self.data_root, 'ma_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
                 od_path = os.path.join(self.data_root, 'od_valid/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
+        elif self.data == 'IDRiD':
+            img_path = os.path.join(self.data_root, '1. Original Images/b. Testing Set/', str(self.landmarks_frame.iloc[idx, 0]) + '.jpg')
         else:
             terminal_msg("Args.Data Error (From ValidDataset.__getitem__)", "F")
             exit()
 
         img = self.load_image(img_path)
-        ma_img = self.load_image(ma_path)
-        od_img = self.load_image(od_path)
+        # ma_img = self.load_image(ma_path)
+        # od_img = self.load_image(od_path)
         landmarks = np.array(self.landmarks_frame.iloc[idx, 1:], dtype=np.float32).tolist()
-        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float(), 'ma_img': ma_img, 'od_img': od_img}
+        sample = {'image': img, 'landmarks': torch.tensor(landmarks).float()}
 
         return sample
 

@@ -142,7 +142,7 @@ class Single_Task_Trainer(object):
                            "Avg F1 Score ({})".format(self.args.data): avg_f1,})
             precision = np.mean([avg_auc, avg_kappa, avg_f1])
 
-        elif self.args.data in ["Kaggle", "APTOS", "DDR"]:
+        elif self.args.data in ["Kaggle", "APTOS", "DDR", "IDRiD"]:
             acc, kappa = single_label_metrics(gt_list, pred_list)
             print(colored("Acc, Quadratic Weighted Kappa: ", "red"), (acc, kappa))
 
