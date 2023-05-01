@@ -31,7 +31,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "RFMiD" --use_wandb --preproc
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DR+" --use_wandb --project DR+ > archive/logs/DR+/baseline.log &
 CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "DR+" --use_wandb --preprocessed --project DR+ > archive/logs/DR+/preprocessed.log &
 
-CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "IDRiD" --batch_size 32 --use_wandb --project IDRiD > archive/logs/DR+/IDRiD_finetune.log &
+CUDA_VISIBLE_DEVICES=1 nohup python idea.py --data "IDRiD" --batch_size 32 --use_wandb --project IDRiD > archive/logs/DR+/IDRiD_finetune_baseline.log &
 
 #============================================Multi Task============================================#
 

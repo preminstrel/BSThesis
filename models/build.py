@@ -22,11 +22,11 @@ class build_single_task_model(nn.Module):
         self.encoder = Encoder()
 
         # Finetune with fixed encoder
-        source = '/home/hssun/thesis/archive/checkpoints/HPS/baseline.pth'
-        checkpoint = torch.load(source)
-        self.encoder.load_state_dict(checkpoint['encoder'])
-        for param in self.encoder.parameters():
-            param.requires_grad = False
+        # source = '/home/hssun/thesis/archive/checkpoints/DR+/model_best.pth'
+        # checkpoint = torch.load(source)
+        # self.encoder.load_state_dict(checkpoint['encoder'])
+        # for param in self.encoder.parameters():
+        #     param.requires_grad = False
 
         self.args = args
         if args.data == "ODIR-5K":
@@ -392,13 +392,13 @@ class build_HPS_model(nn.Module):
         for i in self.decoder:
             self.add_module(str(i), self.decoder[i])
 
-    def forward(self, img, head):
+    def forward(self, img, head="TAOP"):
         representation = self.encoder(img)
         pred = self.decoder[head](representation)
-        return representation, pred
+        return pred
 
     def process(self, img, gt, head):
-        representation, pred = self(img, head)
+        pred = self(img, head)
         self.optimizer.zero_grad()
 
         if head in ["TAOP", "APTOS", "Kaggle", "DDR"]:
@@ -425,7 +425,7 @@ class build_HPS_model(nn.Module):
         raw = {}
         all_result = {}
         for head in self.decoder:
-            representation, pred = self(img, head)
+            pred = self(img, head)
             if head == "TAOP":
                 pred = torch.softmax(pred, dim = 1)
                 result = torch.argmax(pred, dim = 1).cpu().tolist()[0]

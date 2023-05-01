@@ -1,5 +1,11 @@
 # Bachelor Thesis at SEU
 Supervisor: Yi Zhou
 
-IDRiD:
-Acc, Quadratic Weighted Kappa:  (0.6213592233009708, 0.7298971943097166)
+![](web/static/img/Thesis.drawio.png)
+
+Using Flask to build a web server.
+```bash
+flask --app web --debug run --port 8500 --host 0.0.0.0
+```
+
+![](web/static/img/single.png)
