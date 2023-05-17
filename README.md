@@ -20,6 +20,39 @@ python idea.py --data "TAOP, APTOS, DDR, AMD, LAG, PALM, REFUGE, ODIR-5K, RFMiD,
 
 The checkpoints will be saved to `archive/checkpoints/` automatically. If you want to modify the frequency or other settings, please refer `utils/parser.py`.
 
+## Results
+$$
+\text{MP} = \frac{1}{10}\sum_{d = 1}^{10} \text{P}_i = \bar{\text{P}}
+$$
+
+$$
+S =\sum_{d = 1}^{10} S_i = \sum_{d = 1}^{10} 100 \max \\{0, 1-E_d/\beta_d E_d^{\text{baseline}}\\}^{\gamma_d}
+$$
+
+| Methods                           | Mean Performance | $S$         |
+|--------------------------------|------------------|-------------|
+| Single Task Baseline (Average) | 78.31            | 250         |
+| HPS                            | 78.16            | 240.99      |
+| MMoE                           | 71.81            | 71.81       |
+| MTAN                           | 79.00            | 254.60      |
+| Residual Adapters              | 77.53            | 203.05      |
+| Task Specific Control          | 78.51            | 220.51      |
+| Domain Adversarial Training    | 73.05            | 219.65      |
+| Gradient Vaccine               | 78.20            | 217.97      |
+| Fishr                          | 78.40            | 243.16      |
+| Ours                          | **81.13**       | **275.98** |
+
+| Methods                              | Mean Performance | $S$         |
+|------------------------------------|------------------|-------------|
+| Single Task Baseline (Average)     | 78.31            | 250         |
+| HPS                                | 78.16            | 240.99      |
+| HPS+CLAHE                          | 78.37            | 252.33      |
+| HPS+CLAHE+CAS                    | 79.12            | 256.63      |
+| HPS+CLAHE+CAS+Encoder Pretrain         | 80.74            | 263.78      |
+| HPS+CLAHE+CAS+Encoder Pretrain+LAGD | **81.13**      | **275.98** |
+
+
+
 Using Flask to build a web server.
 ```bash
 flask --app web --debug run --port 8500 --host 0.0.0.0
